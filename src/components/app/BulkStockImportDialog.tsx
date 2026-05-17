@@ -44,16 +44,17 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
 
   const parseRows = (raw: Record<string, unknown>[]): Row[] => {
     return raw.map((r) => {
+      const sku = String(r.sku ?? r.SKU ?? r.Sku ?? "").trim();
       const name = String(r.name ?? r.Name ?? r.NAME ?? "").trim();
       const quantity = Number(r.quantity ?? r.Quantity ?? r.QUANTITY ?? r.qty ?? 0);
       const cost = Number(r.cost ?? r.Cost ?? r.COST ?? r.price ?? 0);
-      if (!name) return { name, quantity, cost, status: "invalid", reason: "Missing name" };
+      if (!sku) return { sku, name, quantity, cost, status: "invalid", reason: "Missing SKU" };
       if (!quantity || quantity <= 0)
-        return { name, quantity, cost, status: "invalid", reason: "Invalid quantity" };
-      const existing = ps.find((p) => p.name.toLowerCase() === name.toLowerCase());
+        return { sku, name, quantity, cost, status: "invalid", reason: "Invalid quantity" };
+      const existing = ps.find((p) => p.sku.toLowerCase() === sku.toLowerCase());
       return existing
-        ? { name, quantity, cost, status: "existing", productId: existing.id }
-        : { name, quantity, cost, status: "new" };
+        ? { sku, name: name || existing.name, quantity, cost, status: "existing", productId: existing.id }
+        : { sku, name, quantity, cost, status: "new" };
     });
   };
 
