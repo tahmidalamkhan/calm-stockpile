@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCompany } from "@/lib/mock/store";
 import { formatDate, formatCurrency } from "@/lib/format";
 import { TransferStockDialog } from "@/components/app/TransferStockDialog";
+import { StockAdjustDialog } from "@/components/app/StockAdjustDialog";
 
 export const Route = createFileRoute("/stock")({
   head: () => ({
