@@ -16,6 +16,7 @@ import type { Product, StockMovement } from "@/lib/types";
 import { toast } from "sonner";
 
 type Row = {
+  sku: string;
   name: string;
   quantity: number;
   cost: number;
@@ -43,16 +44,17 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
 
   const parseRows = (raw: Record<string, unknown>[]): Row[] => {
     return raw.map((r) => {
+      const sku = String(r.sku ?? r.SKU ?? r.Sku ?? "").trim();
       const name = String(r.name ?? r.Name ?? r.NAME ?? "").trim();
       const quantity = Number(r.quantity ?? r.Quantity ?? r.QUANTITY ?? r.qty ?? 0);
       const cost = Number(r.cost ?? r.Cost ?? r.COST ?? r.price ?? 0);
-      if (!name) return { name, quantity, cost, status: "invalid", reason: "Missing name" };
+      if (!sku) return { sku, name, quantity, cost, status: "invalid", reason: "Missing SKU" };
       if (!quantity || quantity <= 0)
-        return { name, quantity, cost, status: "invalid", reason: "Invalid quantity" };
-      const existing = ps.find((p) => p.name.toLowerCase() === name.toLowerCase());
+        return { sku, name, quantity, cost, status: "invalid", reason: "Invalid quantity" };
+      const existing = ps.find((p) => p.sku.toLowerCase() === sku.toLowerCase());
       return existing
-        ? { name, quantity, cost, status: "existing", productId: existing.id }
-        : { name, quantity, cost, status: "new" };
+        ? { sku, name: name || existing.name, quantity, cost, status: "existing", productId: existing.id }
+        : { sku, name, quantity, cost, status: "new" };
     });
   };
 
@@ -69,8 +71,8 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
   const downloadTemplate = async () => {
     const XLSX = await import("xlsx");
     const ws2 = XLSX.utils.json_to_sheet([
-      { name: "Sample Product A", quantity: 10, cost: 12.5 },
-      { name: "Sample Product B", quantity: 5, cost: 30 },
+      { sku: "SKU-001", name: "Sample Product A", quantity: 10, cost: 12.5 },
+      { sku: "SKU-002", name: "Sample Product B", quantity: 5, cost: 30 },
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws2, "Stock");
@@ -93,8 +95,8 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
         const newProduct: Product = {
           id: productId,
           companyId: activeCompanyId,
-          sku: `BULK-${ts.toString().slice(-5)}-${idx + 1}`,
-          name: row.name,
+          sku: row.sku || `BULK-${ts.toString().slice(-5)}-${idx + 1}`,
+          name: row.name || row.sku,
           category: "Imported",
           unit: "pcs",
           avgCost: row.cost,
@@ -174,8 +176,9 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Required columns: <code>name</code>, <code>quantity</code>, <code>cost</code>.
-          Existing products (matched by name) get a stock adjustment; new products are created.
+          Required columns: <code>sku</code>, <code>name</code>, <code>quantity</code>, <code>cost</code>.
+          Products are matched by SKU — existing SKUs get a stock adjustment into this warehouse;
+          new SKUs are created as new products.
         </p>
 
         {rows.length > 0 && (
@@ -193,6 +196,7 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>SKU</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead className="text-right">Quantity</TableHead>
                     <TableHead className="text-right">Cost</TableHead>
@@ -202,6 +206,7 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
                 <TableBody>
                   {rows.map((r, i) => (
                     <TableRow key={i}>
+                      <TableCell className="font-mono text-xs">{r.sku || <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell>{r.name || <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell className="text-right font-mono">{r.quantity}</TableCell>
                       <TableCell className="text-right font-mono">{r.cost}</TableCell>

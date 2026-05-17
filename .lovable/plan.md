@@ -1,60 +1,44 @@
-# Plan: Standalone Inventory Management App
+# Bulk import by SKU, warehouse-wise
 
-Source: [Happy Ledger](/projects/7e6e68f9-c623-40b2-a0ab-a26394fd6711) — its inventory section will be copied here. The Happy Ledger project itself is **not** modified; its inventory module stays intact.
+## Flow
+- User picks one destination **warehouse** in the dialog (as today).
+- User uploads an Excel file with columns: `sku`, `name`, `quantity`, `cost`.
+- One file = one warehouse. To stock the same products in another warehouse, the user runs the import again and picks that warehouse. The same SKU naturally ends up in multiple warehouses because stock movements are per `(productId, warehouseId)`.
 
-## Scope
+## SKU matching rules
+For each row:
+1. **SKU required.** Rows with no SKU → marked `invalid` ("Missing SKU").
+2. Look up an existing product by `sku` (case-insensitive, trimmed).
+   - **Found** → status `existing`. Create a stock adjustment movement into the chosen warehouse using that `productId`. The product itself is not duplicated, so the same SKU now has stock in this warehouse in addition to wherever it already existed.
+   - **Not found** → status `new`. Create a new product using the SKU and name from the file (category `Imported`, unit `pcs`, `avgCost` = cost, `price` = cost, `reorderLevel` = 0), then create the adjustment movement into the chosen warehouse.
+3. Quantity must be > 0, otherwise `invalid`.
 
-Port only the Inventory-related parts of Happy Ledger into this empty TanStack Start project, and reshape the shell so inventory is the entire product (not a sub-section of a bookkeeping app).
+## Preview table (in dialog)
+Columns: SKU, Name, Quantity, Cost, Status.
+Status chip:
+- `New product` (SKU not seen before)
+- `Update existing` (SKU matches a product)
+- `Invalid` with reason (missing SKU, missing/zero quantity)
 
-### Routes to port
-From `src/routes/` in Happy Ledger:
-- `products.tsx` → Products catalog
-- `stock.tsx` → Stock Control (current stock per warehouse)
-- `stock-history.tsx` → Stock movement history
-- `warehouses.tsx` → Warehouses
-- `suppliers.tsx` → Suppliers (kept — core to inventory/purchasing)
-- New `index.tsx` → Inventory Dashboard (stat cards: total products, low stock, warehouses, recent movements)
+Summary chips above the table: New / Existing / Invalid counts.
 
-Not ported: sales, customers, receivables, purchase, payables, income, expense, accounts, transactions, fixed-assets, equity, balance-sheet, profit-loss, invoices.
+## Excel template
+Downloadable template updated to:
 
-### Components to port
-From `src/components/app/`:
-- `AppLayout.tsx` — trimmed to inventory-only nav, rebranded
-- `PageHeader.tsx`, `StatCard.tsx`
-- `NewProductDialog.tsx`, `NewWarehouseDialog.tsx`, `NewSupplierDialog.tsx`
-- `BulkStockImportDialog.tsx`, `TransferStockDialog.tsx`, `TransferDialog.tsx`
-- `CompanyProfileCard.tsx` (optional — only if used by inventory pages)
+```text
+sku            | name                | quantity | cost
+SKU-001        | Sample Product A    | 10       | 12.5
+SKU-002        | Sample Product B    | 5        | 30
+```
 
-Dropped: Invoice, InvoiceDialog, Customer/Sale/Purchase/Receivable/Payable/Expense/Income/Account/Equity/FixedAsset dialogs.
+Accepted header variants (case-insensitive): `sku`/`SKU`, `name`, `quantity`/`qty`, `cost`/`price`.
 
-### Library code to port
-- `src/lib/types.ts` — keep only inventory types (Product, Warehouse, Stock, StockMovement, Supplier, Company)
-- `src/lib/format.ts`, `src/lib/utils.ts` — full copy
-- `src/lib/mock/data.ts` and `store.tsx` — trimmed to inventory entities + company switcher
+## Files to change
+- `src/components/app/BulkStockImportDialog.tsx`
+  - Add `sku` to the `Row` type; parse it from the sheet.
+  - Replace name-based lookup with SKU-based lookup against `products`.
+  - Use the uploaded `sku` (not a generated `BULK-…` code) when creating new products; fall back to a generated SKU only if a row is `new` and the SKU somehow ended up blank (shouldn't happen given validation).
+  - Update preview table to show SKU column.
+  - Update template download to include the `sku` column.
 
-### Shell changes
-- Rebrand sidebar header from "Ledger / Books & Stock" to "Inventory" (e.g. "StockHub" or similar — final name TBD, placeholder "Inventory").
-- New sidebar groups:
-  - Overview: Dashboard
-  - Inventory: Products, Stock Control, Stock History, Warehouses
-  - Suppliers: Suppliers
-- Root route `__root.tsx` and `styles.css` copied as-is (same design tokens).
-- Update root head meta (title, description) to inventory product.
-
-## Technical notes
-
-- Stack already matches (TanStack Start, Tailwind v4, shadcn) — no dependency changes expected beyond what Happy Ledger uses; verify `lucide-react`, `zod`, `react-hook-form`, `sonner`, `date-fns` are present and `bun add` any missing.
-- Data layer stays as in-memory mock store (same pattern as source). No Lovable Cloud / DB unless requested later.
-- All files copied via `cross_project--read_project_file` then written here; trim imports that referenced removed modules.
-- Replace placeholder `src/routes/index.tsx` with the new inventory dashboard.
-- Keep design tokens identical so visual parity is preserved.
-
-## Out of scope (ask before adding)
-- Authentication, multi-tenant DB, real backend.
-- New inventory features not present in Happy Ledger (barcodes, serial tracking, POs workflow, etc.).
-- Renaming the product / custom branding beyond a placeholder name.
-
-## Open questions
-1. App name — keep "Inventory" placeholder, or pick something like "StockHub" / "InventoryPro"?
-2. Include **Suppliers** page? (Recommended yes — useful even without purchasing module.)
-3. Keep the multi-company switcher in the header, or single-tenant?
+No schema or auth changes. The `/warehouses` page already opens this dialog with the warehouse preselected, so the warehouse-wise workflow is already in place.
