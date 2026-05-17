@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArrowLeftRight, Plus, Trash2 } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Plus, Trash2 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -13,24 +13,33 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { useCompany } from "@/lib/mock/store";
+import type { StockMovement } from "@/lib/types";
 import { toast } from "sonner";
 
-type Line = { id: string; productId: string; toWarehouseId: string; quantity: number };
+type Direction = "in" | "out";
+type Line = {
+  id: string;
+  productId: string;
+  warehouseId: string;
+  quantity: number;
+  unitCost: number;
+};
 
 const newLine = (): Line => ({
   id: `l-${Math.random().toString(36).slice(2, 9)}`,
   productId: "",
-  toWarehouseId: "",
+  warehouseId: "",
   quantity: 0,
+  unitCost: 0,
 });
 
-export function TransferStockDialog() {
-  const { activeCompanyId, warehouses, products, stockMovements, transferStock } = useCompany();
+export function StockAdjustDialog({ direction }: { direction: Direction }) {
+  const isIn = direction === "in";
+  const { activeCompanyId, warehouses, products, stockMovements, addStockMovements } = useCompany();
   const ws = warehouses.filter((w) => w.companyId === activeCompanyId);
   const ps = products.filter((p) => p.companyId === activeCompanyId);
 
   const [open, setOpen] = React.useState(false);
-  const [fromId, setFromId] = React.useState<string>(ws[0]?.id ?? "");
   const [date, setDate] = React.useState(new Date().toISOString().slice(0, 10));
   const [lines, setLines] = React.useState<Line[]>([newLine()]);
 
@@ -52,60 +61,50 @@ export function TransferStockDialog() {
     setLines((cur) => (cur.length > 1 ? cur.filter((l) => l.id !== id) : cur));
 
   const submit = () => {
-    if (!fromId) return toast.error("Pick a source warehouse");
-    const valid = lines.filter((l) => l.productId && l.toWarehouseId && l.quantity > 0);
+    const valid = lines.filter((l) => l.productId && l.warehouseId && l.quantity > 0);
     if (!valid.length) return toast.error("Add at least one line");
-    for (const l of valid) {
-      if (l.toWarehouseId === fromId)
-        return toast.error("Destination must differ from source");
-    }
-    // Validate against availability per product
-    const byProduct = new Map<string, number>();
-    for (const l of valid) byProduct.set(l.productId, (byProduct.get(l.productId) ?? 0) + l.quantity);
-    for (const [pid, total] of byProduct) {
-      const avail = qtyAt(pid, fromId);
-      if (total > avail) {
-        const name = ps.find((p) => p.id === pid)?.name ?? pid;
-        return toast.error(`Total transfer of ${name} (${total}) exceeds available (${avail})`);
+    if (!isIn) {
+      for (const l of valid) {
+        const avail = qtyAt(l.productId, l.warehouseId);
+        if (l.quantity > avail) {
+          const name = ps.find((p) => p.id === l.productId)?.name ?? l.productId;
+          const wh = ws.find((w) => w.id === l.warehouseId)?.name ?? l.warehouseId;
+          return toast.error(`${name} in ${wh}: quantity ${l.quantity} exceeds available ${avail}`);
+        }
       }
     }
-    // Group by destination so we send one transfer per destination
-    const byDest = new Map<string, { productId: string; quantity: number }[]>();
-    for (const l of valid) {
-      const arr = byDest.get(l.toWarehouseId) ?? [];
-      arr.push({ productId: l.productId, quantity: l.quantity });
-      byDest.set(l.toWarehouseId, arr);
-    }
-    const ref = `TRF-${Date.now().toString().slice(-6)}`;
-    for (const [toId, items] of byDest) {
-      transferStock({ fromWarehouseId: fromId, toWarehouseId: toId, date, items, reference: ref });
-    }
-    toast.success(`Transferred ${valid.length} line(s) to ${byDest.size} warehouse(s)`);
+    const ref = `${isIn ? "IN" : "OUT"}-${Date.now().toString().slice(-6)}`;
+    const ts = Date.now();
+    const movements: StockMovement[] = valid.map((l, idx) => ({
+      id: `sm-${isIn ? "in" : "out"}-${ts}-${idx}`,
+      companyId: activeCompanyId,
+      date,
+      productId: l.productId,
+      warehouseId: l.warehouseId,
+      type: isIn ? "purchase" : "sale",
+      quantity: isIn ? l.quantity : -l.quantity,
+      unitCost: l.unitCost,
+      reference: ref,
+    }));
+    addStockMovements(movements);
+    toast.success(`Stock ${isIn ? "in" : "out"}: ${valid.length} line(s)`);
     setOpen(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">
-          <ArrowLeftRight className="mr-1 h-4 w-4" /> Transfer stock
+        <Button variant={isIn ? "default" : "outline"}>
+          {isIn ? <ArrowDownToLine className="mr-1 h-4 w-4" /> : <ArrowUpFromLine className="mr-1 h-4 w-4" />}
+          Stock {isIn ? "in" : "out"}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Transfer stock to one or more warehouses</DialogTitle>
+          <DialogTitle>{isIn ? "Stock in" : "Stock out"} — multiple items & warehouses</DialogTitle>
         </DialogHeader>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="grid gap-1.5">
-            <Label>From warehouse</Label>
-            <Select value={fromId} onValueChange={setFromId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {ws.map((w) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
           <div className="grid gap-1.5">
             <Label>Date</Label>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
@@ -117,15 +116,16 @@ export function TransferStockDialog() {
             <TableHeader>
               <TableRow>
                 <TableHead>Product</TableHead>
-                <TableHead>To warehouse</TableHead>
-                <TableHead className="text-right">Available</TableHead>
+                <TableHead>Warehouse</TableHead>
+                {!isIn && <TableHead className="text-right">Available</TableHead>}
                 <TableHead className="text-right w-28">Quantity</TableHead>
+                <TableHead className="text-right w-28">{isIn ? "Unit cost" : "Unit price"}</TableHead>
                 <TableHead className="w-10"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {lines.map((l) => {
-                const avail = l.productId ? qtyAt(l.productId, fromId) : 0;
+                const avail = l.productId && l.warehouseId ? qtyAt(l.productId, l.warehouseId) : 0;
                 return (
                   <TableRow key={l.id}>
                     <TableCell>
@@ -137,21 +137,27 @@ export function TransferStockDialog() {
                       </Select>
                     </TableCell>
                     <TableCell>
-                      <Select value={l.toWarehouseId} onValueChange={(v) => update(l.id, { toWarehouseId: v })}>
+                      <Select value={l.warehouseId} onValueChange={(v) => update(l.id, { warehouseId: v })}>
                         <SelectTrigger className="h-8"><SelectValue placeholder="Select warehouse" /></SelectTrigger>
                         <SelectContent>
-                          {ws.filter((w) => w.id !== fromId).map((w) => (
-                            <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
-                          ))}
+                          {ws.map((w) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="text-right font-mono">{avail}</TableCell>
+                    {!isIn && <TableCell className="text-right font-mono">{avail}</TableCell>}
                     <TableCell className="text-right">
                       <Input
-                        type="number" min={0} max={avail}
+                        type="number" min={0} max={isIn ? undefined : avail}
                         value={l.quantity || ""}
                         onChange={(e) => update(l.id, { quantity: Number(e.target.value) })}
+                        className="ml-auto h-8 w-24 text-right"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number" min={0} step="0.01"
+                        value={l.unitCost || ""}
+                        onChange={(e) => update(l.id, { unitCost: Number(e.target.value) })}
                         className="ml-auto h-8 w-24 text-right"
                       />
                     </TableCell>
@@ -175,7 +181,7 @@ export function TransferStockDialog() {
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={submit}>Transfer</Button>
+          <Button onClick={submit}>{isIn ? "Stock in" : "Stock out"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

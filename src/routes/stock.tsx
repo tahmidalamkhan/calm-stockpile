@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCompany } from "@/lib/mock/store";
 import { formatDate, formatCurrency } from "@/lib/format";
 import { TransferStockDialog } from "@/components/app/TransferStockDialog";
+import { StockAdjustDialog } from "@/components/app/StockAdjustDialog";
 
 export const Route = createFileRoute("/stock")({
   head: () => ({
@@ -40,7 +41,13 @@ function StockPage() {
       <PageHeader
         title="Stock Control"
         description="On-hand by warehouse, transfers, and movement history"
-        actions={<TransferStockDialog />}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <StockAdjustDialog direction="in" />
+            <StockAdjustDialog direction="out" />
+            <TransferStockDialog />
+          </div>
+        }
       />
 
       <Card className="mb-6">
