@@ -1,12 +1,11 @@
 import * as React from "react";
-import { ArrowLeftRight, Search } from "lucide-react";
+import { ArrowLeftRight, Plus, Trash2 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -16,6 +15,15 @@ import {
 import { useCompany } from "@/lib/mock/store";
 import { toast } from "sonner";
 
+type Line = { id: string; productId: string; toWarehouseId: string; quantity: number };
+
+const newLine = (): Line => ({
+  id: `l-${Math.random().toString(36).slice(2, 9)}`,
+  productId: "",
+  toWarehouseId: "",
+  quantity: 0,
+});
+
 export function TransferStockDialog() {
   const { activeCompanyId, warehouses, products, stockMovements, transferStock } = useCompany();
   const ws = warehouses.filter((w) => w.companyId === activeCompanyId);
@@ -23,64 +31,56 @@ export function TransferStockDialog() {
 
   const [open, setOpen] = React.useState(false);
   const [fromId, setFromId] = React.useState<string>(ws[0]?.id ?? "");
-  const [toId, setToId] = React.useState<string>(ws[1]?.id ?? ws[0]?.id ?? "");
   const [date, setDate] = React.useState(new Date().toISOString().slice(0, 10));
-  const [picks, setPicks] = React.useState<Record<string, number>>({});
-  const [search, setSearch] = React.useState("");
+  const [lines, setLines] = React.useState<Line[]>([newLine()]);
 
   React.useEffect(() => {
     if (open) {
-      setPicks({});
-      setSearch("");
+      setLines([newLine()]);
+      setDate(new Date().toISOString().slice(0, 10));
     }
-  }, [open, fromId]);
+  }, [open]);
 
   const qtyAt = (productId: string, warehouseId: string) =>
     stockMovements
       .filter((m) => m.productId === productId && m.warehouseId === warehouseId)
       .reduce((s, m) => s + m.quantity, 0);
 
-  const inventory = ps
-    .map((p) => ({ p, available: qtyAt(p.id, fromId) }))
-    .filter((x) => x.available > 0)
-    .filter((x) => {
-      const q = search.trim().toLowerCase();
-      if (!q) return true;
-      return x.p.name.toLowerCase().startsWith(q) || x.p.sku.toLowerCase().startsWith(q);
-    });
-
-  const toggle = (productId: string, available: number) =>
-    setPicks((cur) => {
-      const next = { ...cur };
-      if (next[productId] != null) delete next[productId];
-      else next[productId] = available;
-      return next;
-    });
+  const update = (id: string, patch: Partial<Line>) =>
+    setLines((cur) => cur.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+  const remove = (id: string) =>
+    setLines((cur) => (cur.length > 1 ? cur.filter((l) => l.id !== id) : cur));
 
   const submit = () => {
-    if (!fromId || !toId) return toast.error("Pick source and destination");
-    if (fromId === toId) return toast.error("Source and destination must differ");
-    const items = Object.entries(picks)
-      .map(([productId, quantity]) => ({ productId, quantity: Number(quantity) }))
-      .filter((it) => it.quantity > 0);
-    if (!items.length) return toast.error("Select at least one item with quantity");
-    for (const it of items) {
-      const avail = qtyAt(it.productId, fromId);
-      if (it.quantity > avail) {
-        return toast.error(
-          `Quantity for ${ps.find((p) => p.id === it.productId)?.name} exceeds available (${avail})`,
-        );
+    if (!fromId) return toast.error("Pick a source warehouse");
+    const valid = lines.filter((l) => l.productId && l.toWarehouseId && l.quantity > 0);
+    if (!valid.length) return toast.error("Add at least one line");
+    for (const l of valid) {
+      if (l.toWarehouseId === fromId)
+        return toast.error("Destination must differ from source");
+    }
+    // Validate against availability per product
+    const byProduct = new Map<string, number>();
+    for (const l of valid) byProduct.set(l.productId, (byProduct.get(l.productId) ?? 0) + l.quantity);
+    for (const [pid, total] of byProduct) {
+      const avail = qtyAt(pid, fromId);
+      if (total > avail) {
+        const name = ps.find((p) => p.id === pid)?.name ?? pid;
+        return toast.error(`Total transfer of ${name} (${total}) exceeds available (${avail})`);
       }
     }
-    transferStock({
-      fromWarehouseId: fromId,
-      toWarehouseId: toId,
-      date,
-      items,
-      reference: `TRF-${Date.now().toString().slice(-6)}`,
-    });
-    toast.success(`Transferred ${items.length} item(s)`);
-    setPicks({});
+    // Group by destination so we send one transfer per destination
+    const byDest = new Map<string, { productId: string; quantity: number }[]>();
+    for (const l of valid) {
+      const arr = byDest.get(l.toWarehouseId) ?? [];
+      arr.push({ productId: l.productId, quantity: l.quantity });
+      byDest.set(l.toWarehouseId, arr);
+    }
+    const ref = `TRF-${Date.now().toString().slice(-6)}`;
+    for (const [toId, items] of byDest) {
+      transferStock({ fromWarehouseId: fromId, toWarehouseId: toId, date, items, reference: ref });
+    }
+    toast.success(`Transferred ${valid.length} line(s) to ${byDest.size} warehouse(s)`);
     setOpen(false);
   };
 
@@ -91,21 +91,15 @@ export function TransferStockDialog() {
           <ArrowLeftRight className="mr-1 h-4 w-4" /> Transfer stock
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader><DialogTitle>Transfer stock between warehouses</DialogTitle></DialogHeader>
-        <div className="grid grid-cols-3 gap-3">
+      <DialogContent className="max-w-4xl">
+        <DialogHeader>
+          <DialogTitle>Transfer stock to one or more warehouses</DialogTitle>
+        </DialogHeader>
+
+        <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-1.5">
-            <Label>From</Label>
+            <Label>From warehouse</Label>
             <Select value={fromId} onValueChange={setFromId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {ws.map((w) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-1.5">
-            <Label>To</Label>
-            <Select value={toId} onValueChange={setToId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {ws.map((w) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
@@ -118,67 +112,65 @@ export function TransferStockDialog() {
           </div>
         </div>
 
-        <div className="relative mt-2">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search products by name or SKU…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8"
-          />
-        </div>
-
-        <div className="mt-2 max-h-[360px] overflow-y-auto rounded-md border">
+        <div className="mt-2 max-h-[420px] overflow-y-auto rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-10"></TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead>Name</TableHead>
+                <TableHead>Product</TableHead>
+                <TableHead>To warehouse</TableHead>
                 <TableHead className="text-right">Available</TableHead>
-                <TableHead className="text-right w-32">Transfer qty</TableHead>
+                <TableHead className="text-right w-28">Quantity</TableHead>
+                <TableHead className="w-10"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {inventory.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    No stock available in this warehouse.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                inventory.map(({ p, available }) => {
-                  const checked = picks[p.id] != null;
-                  return (
-                    <TableRow key={p.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={checked}
-                          onCheckedChange={() => toggle(p.id, available)}
-                        />
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">{p.sku}</TableCell>
-                      <TableCell>{p.name}</TableCell>
-                      <TableCell className="text-right font-mono">{available}</TableCell>
-                      <TableCell className="text-right">
-                        <Input
-                          type="number"
-                          min={0}
-                          max={available}
-                          disabled={!checked}
-                          value={checked ? picks[p.id] : 0}
-                          onChange={(e) =>
-                            setPicks((cur) => ({ ...cur, [p.id]: Number(e.target.value) }))
-                          }
-                          className="ml-auto h-8 w-24 text-right"
-                        />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
+              {lines.map((l) => {
+                const avail = l.productId ? qtyAt(l.productId, fromId) : 0;
+                return (
+                  <TableRow key={l.id}>
+                    <TableCell>
+                      <Select value={l.productId} onValueChange={(v) => update(l.id, { productId: v })}>
+                        <SelectTrigger className="h-8"><SelectValue placeholder="Select product" /></SelectTrigger>
+                        <SelectContent>
+                          {ps.map((p) => <SelectItem key={p.id} value={p.id}>{p.sku} — {p.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <Select value={l.toWarehouseId} onValueChange={(v) => update(l.id, { toWarehouseId: v })}>
+                        <SelectTrigger className="h-8"><SelectValue placeholder="Select warehouse" /></SelectTrigger>
+                        <SelectContent>
+                          {ws.filter((w) => w.id !== fromId).map((w) => (
+                            <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-right font-mono">{avail}</TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number" min={0} max={avail}
+                        value={l.quantity || ""}
+                        onChange={(e) => update(l.id, { quantity: Number(e.target.value) })}
+                        className="ml-auto h-8 w-24 text-right"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" onClick={() => remove(l.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
+        </div>
+
+        <div>
+          <Button variant="outline" size="sm" onClick={() => setLines((c) => [...c, newLine()])}>
+            <Plus className="mr-1 h-4 w-4" /> Add line
+          </Button>
         </div>
 
         <DialogFooter>
