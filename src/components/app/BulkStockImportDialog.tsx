@@ -95,8 +95,8 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
         const newProduct: Product = {
           id: productId,
           companyId: activeCompanyId,
-          sku: `BULK-${ts.toString().slice(-5)}-${idx + 1}`,
-          name: row.name,
+          sku: row.sku || `BULK-${ts.toString().slice(-5)}-${idx + 1}`,
+          name: row.name || row.sku,
           category: "Imported",
           unit: "pcs",
           avgCost: row.cost,
