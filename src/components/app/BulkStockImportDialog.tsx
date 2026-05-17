@@ -176,8 +176,9 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Required columns: <code>name</code>, <code>quantity</code>, <code>cost</code>.
-          Existing products (matched by name) get a stock adjustment; new products are created.
+          Required columns: <code>sku</code>, <code>name</code>, <code>quantity</code>, <code>cost</code>.
+          Products are matched by SKU — existing SKUs get a stock adjustment into this warehouse;
+          new SKUs are created as new products.
         </p>
 
         {rows.length > 0 && (
@@ -195,6 +196,7 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>SKU</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead className="text-right">Quantity</TableHead>
                     <TableHead className="text-right">Cost</TableHead>
@@ -204,6 +206,7 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
                 <TableBody>
                   {rows.map((r, i) => (
                     <TableRow key={i}>
+                      <TableCell className="font-mono text-xs">{r.sku || <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell>{r.name || <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell className="text-right font-mono">{r.quantity}</TableCell>
                       <TableCell className="text-right font-mono">{r.cost}</TableCell>
