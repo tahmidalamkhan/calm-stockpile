@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WarehousesRouteImport } from './routes/warehouses'
+import { Route as UsersRouteImport } from './routes/users'
 import { Route as SuppliersRouteImport } from './routes/suppliers'
 import { Route as StockHistoryRouteImport } from './routes/stock-history'
 import { Route as StockRouteImport } from './routes/stock'
@@ -19,6 +20,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const WarehousesRoute = WarehousesRouteImport.update({
   id: '/warehouses',
   path: '/warehouses',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SuppliersRoute = SuppliersRouteImport.update({
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/stock': typeof StockRoute
   '/stock-history': typeof StockHistoryRoute
   '/suppliers': typeof SuppliersRoute
+  '/users': typeof UsersRoute
   '/warehouses': typeof WarehousesRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/stock': typeof StockRoute
   '/stock-history': typeof StockHistoryRoute
   '/suppliers': typeof SuppliersRoute
+  '/users': typeof UsersRoute
   '/warehouses': typeof WarehousesRoute
 }
 export interface FileRoutesById {
@@ -70,6 +78,7 @@ export interface FileRoutesById {
   '/stock': typeof StockRoute
   '/stock-history': typeof StockHistoryRoute
   '/suppliers': typeof SuppliersRoute
+  '/users': typeof UsersRoute
   '/warehouses': typeof WarehousesRoute
 }
 export interface FileRouteTypes {
@@ -80,6 +89,7 @@ export interface FileRouteTypes {
     | '/stock'
     | '/stock-history'
     | '/suppliers'
+    | '/users'
     | '/warehouses'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -88,6 +98,7 @@ export interface FileRouteTypes {
     | '/stock'
     | '/stock-history'
     | '/suppliers'
+    | '/users'
     | '/warehouses'
   id:
     | '__root__'
@@ -96,6 +107,7 @@ export interface FileRouteTypes {
     | '/stock'
     | '/stock-history'
     | '/suppliers'
+    | '/users'
     | '/warehouses'
   fileRoutesById: FileRoutesById
 }
@@ -105,6 +117,7 @@ export interface RootRouteChildren {
   StockRoute: typeof StockRoute
   StockHistoryRoute: typeof StockHistoryRoute
   SuppliersRoute: typeof SuppliersRoute
+  UsersRoute: typeof UsersRoute
   WarehousesRoute: typeof WarehousesRoute
 }
 
@@ -115,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/warehouses'
       fullPath: '/warehouses'
       preLoaderRoute: typeof WarehousesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/suppliers': {
@@ -161,8 +181,19 @@ const rootRouteChildren: RootRouteChildren = {
   StockRoute: StockRoute,
   StockHistoryRoute: StockHistoryRoute,
   SuppliersRoute: SuppliersRoute,
+  UsersRoute: UsersRoute,
   WarehousesRoute: WarehousesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
