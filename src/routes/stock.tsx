@@ -41,7 +41,13 @@ function StockPage() {
       <PageHeader
         title="Stock Control"
         description="On-hand by warehouse, transfers, and movement history"
-        actions={<TransferStockDialog />}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <StockAdjustDialog direction="in" />
+            <StockAdjustDialog direction="out" />
+            <TransferStockDialog />
+          </div>
+        }
       />
 
       <Card className="mb-6">
