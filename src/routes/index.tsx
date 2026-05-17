@@ -1,7 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { Package, Boxes, Warehouse as WarehouseIcon, AlertTriangle, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/app/PageHeader";
 import { StatCard } from "@/components/app/StatCard";
+import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -19,7 +20,9 @@ import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
 export const Route = createFileRoute("/")({ component: Dashboard });
 
 function Dashboard() {
+  const { role } = useAuth();
   const { activeCompanyId, activeCompany, products, warehouses, stockMovements } = useCompany();
+  if (role && role !== "admin") return <Navigate to="/products" />;
 
   const ps = products.filter((p) => p.companyId === activeCompanyId);
   const ws = warehouses.filter((w) => w.companyId === activeCompanyId);

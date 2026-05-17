@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   Package,
@@ -7,7 +7,8 @@ import {
   Warehouse as WarehouseIcon,
   FileText,
   Truck,
-  Search,
+  Users as UsersIcon,
+  LogOut,
 } from "lucide-react";
 import {
   Sidebar,
@@ -23,25 +24,31 @@ import {
   SidebarTrigger,
   SidebarInset,
 } from "@/components/ui/sidebar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { useCompany } from "@/lib/mock/store";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth, type Role } from "@/hooks/use-auth";
 
-const navGroups: {
-  label: string;
-  items: { title: string; to: string; icon: React.ComponentType<{ className?: string }> }[];
-}[] = [
+type NavItem = {
+  title: string;
+  to: string;
+  icon: React.ComponentType<{ className?: string }>;
+  roles?: Role[];
+};
+
+const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Overview",
-    items: [{ title: "Dashboard", to: "/", icon: LayoutDashboard }],
+    items: [{ title: "Dashboard", to: "/", icon: LayoutDashboard, roles: ["admin"] }],
   },
   {
     label: "Inventory",
@@ -56,28 +63,15 @@ const navGroups: {
     label: "Suppliers",
     items: [{ title: "Suppliers", to: "/suppliers", icon: Truck }],
   },
+  {
+    label: "Administration",
+    items: [{ title: "Users", to: "/users", icon: UsersIcon, roles: ["admin"] }],
+  },
 ];
-
-function CompanySwitcher() {
-  const { companies, activeCompanyId, setActiveCompanyId } = useCompany();
-  return (
-    <Select value={activeCompanyId} onValueChange={setActiveCompanyId}>
-      <SelectTrigger className="w-[220px]">
-        <SelectValue placeholder="Select company" />
-      </SelectTrigger>
-      <SelectContent>
-        {companies.map((c) => (
-          <SelectItem key={c.id} value={c.id}>
-            {c.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
 
 function AppSidebar() {
   const location = useLocation();
+  const { role } = useAuth();
   return (
     <Sidebar>
       <SidebarHeader className="border-b px-4 py-4">
@@ -92,33 +86,82 @@ function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        {navGroups.map((group) => (
-          <SidebarGroup key={group.label}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => {
-                  const isActive =
-                    item.to === "/"
-                      ? location.pathname === "/"
-                      : location.pathname.startsWith(item.to);
-                  return (
-                    <SidebarMenuItem key={item.to}>
-                      <SidebarMenuButton asChild isActive={isActive}>
-                        <Link to={item.to}>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+        {navGroups.map((group) => {
+          const items = group.items.filter(
+            (i) => !i.roles || (role && i.roles.includes(role)),
+          );
+          if (items.length === 0) return null;
+          return (
+            <SidebarGroup key={group.label}>
+              <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {items.map((item) => {
+                    const isActive =
+                      item.to === "/"
+                        ? location.pathname === "/"
+                        : location.pathname.startsWith(item.to);
+                    return (
+                      <SidebarMenuItem key={item.to}>
+                        <SidebarMenuButton asChild isActive={isActive}>
+                          <Link to={item.to}>
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
     </Sidebar>
+  );
+}
+
+function UserMenu() {
+  const { user, role, signOut } = useAuth();
+  const navigate = useNavigate();
+  const initials = (user?.email ?? "?").slice(0, 2).toUpperCase();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-9 gap-2 px-2">
+          <Avatar className="h-7 w-7">
+            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+          </Avatar>
+          <div className="hidden flex-col items-start text-left sm:flex">
+            <span className="text-xs font-medium leading-none">{user?.email}</span>
+            {role && (
+              <span className="text-[10px] capitalize text-muted-foreground">{role}</span>
+            )}
+          </div>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel className="flex flex-col gap-1">
+          <span className="text-xs font-normal text-muted-foreground">Signed in as</span>
+          <span className="truncate">{user?.email}</span>
+          {role && (
+            <Badge variant="outline" className="mt-1 w-fit capitalize">
+              {role}
+            </Badge>
+          )}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={async () => {
+            await signOut();
+            navigate({ to: "/" });
+          }}
+        >
+          <LogOut className="mr-2 h-4 w-4" /> Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -130,15 +173,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-background px-4">
           <SidebarTrigger />
           <Separator orientation="vertical" className="h-6" />
-          <CompanySwitcher />
-          <div className="relative ml-2 hidden flex-1 max-w-md md:block">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search…" className="pl-8" />
-          </div>
           <div className="ml-auto flex items-center gap-3">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback>AD</AvatarFallback>
-            </Avatar>
+            <UserMenu />
           </div>
         </header>
         <main className="flex-1 p-6">{children}</main>
