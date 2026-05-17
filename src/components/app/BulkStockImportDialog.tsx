@@ -16,6 +16,7 @@ import type { Product, StockMovement } from "@/lib/types";
 import { toast } from "sonner";
 
 type Row = {
+  sku: string;
   name: string;
   quantity: number;
   cost: number;
