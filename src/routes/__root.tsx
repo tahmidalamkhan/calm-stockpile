@@ -11,6 +11,8 @@ import {
 import appCss from "../styles.css?url";
 import { CompanyProvider } from "@/lib/mock/store";
 import { AppLayout } from "@/components/app/AppLayout";
+import { LoginPage } from "@/components/app/LoginPage";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -104,16 +106,33 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+function AuthedShell() {
+  const { loading, session } = useAuth();
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+        Loading…
+      </div>
+    );
+  }
+  if (!session) return <LoginPage />;
+  return (
+    <CompanyProvider>
+      <AppLayout>
+        <Outlet />
+      </AppLayout>
+    </CompanyProvider>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <CompanyProvider>
-        <AppLayout>
-          <Outlet />
-        </AppLayout>
+      <AuthProvider>
+        <AuthedShell />
         <Toaster />
-      </CompanyProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
