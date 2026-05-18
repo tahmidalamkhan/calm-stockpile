@@ -12,6 +12,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { ProductSearchSelect } from "@/components/app/ProductSearchSelect";
 import { useCompany } from "@/lib/mock/store";
 import { toast } from "sonner";
 
