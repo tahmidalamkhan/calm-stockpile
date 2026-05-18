@@ -12,6 +12,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { ProductSearchSelect } from "@/components/app/ProductSearchSelect";
 import { useCompany } from "@/lib/mock/store";
 import type { StockMovement } from "@/lib/types";
 import { toast } from "sonner";
@@ -129,12 +130,12 @@ export function StockAdjustDialog({ direction }: { direction: Direction }) {
                 return (
                   <TableRow key={l.id}>
                     <TableCell>
-                      <Select value={l.productId} onValueChange={(v) => update(l.id, { productId: v })}>
-                        <SelectTrigger className="h-8"><SelectValue placeholder="Select product" /></SelectTrigger>
-                        <SelectContent>
-                          {ps.map((p) => <SelectItem key={p.id} value={p.id}>{p.sku} — {p.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <ProductSearchSelect
+                        products={ps}
+                        value={l.productId}
+                        onChange={(v) => update(l.id, { productId: v })}
+                        placeholder="Select product"
+                      />
                     </TableCell>
                     <TableCell>
                       <Select value={l.warehouseId} onValueChange={(v) => update(l.id, { warehouseId: v })}>
