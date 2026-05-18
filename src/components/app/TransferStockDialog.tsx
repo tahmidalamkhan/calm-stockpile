@@ -130,12 +130,12 @@ export function TransferStockDialog() {
                 return (
                   <TableRow key={l.id}>
                     <TableCell>
-                      <Select value={l.productId} onValueChange={(v) => update(l.id, { productId: v })}>
-                        <SelectTrigger className="h-8"><SelectValue placeholder="Select product" /></SelectTrigger>
-                        <SelectContent>
-                          {ps.map((p) => <SelectItem key={p.id} value={p.id}>{p.sku} — {p.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <ProductSearchSelect
+                        products={ps}
+                        value={l.productId}
+                        onChange={(v) => update(l.id, { productId: v })}
+                        placeholder="Select product"
+                      />
                     </TableCell>
                     <TableCell>
                       <Select value={l.toWarehouseId} onValueChange={(v) => update(l.id, { toWarehouseId: v })}>
