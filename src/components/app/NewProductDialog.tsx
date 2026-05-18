@@ -22,6 +22,7 @@ export function NewProductDialog() {
 
   const [open, setOpen] = React.useState(false);
   const [sku, setSku] = React.useState("");
+  const [skuEdited, setSkuEdited] = React.useState(false);
   const [name, setName] = React.useState("");
   const [category, setCategory] = React.useState("");
   const [unit, setUnit] = React.useState("pcs");
@@ -35,6 +36,21 @@ export function NewProductDialog() {
   React.useEffect(() => {
     setStockRows([{ warehouseId: defaultWh, quantity: 0 }]);
   }, [defaultWh]);
+
+  const generateSku = (n: string) => {
+    const base = n
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, "")
+      .slice(0, 4);
+    if (!base) return "";
+    const rand = Math.floor(1000 + Math.random() * 9000);
+    return `${base}-${rand}`;
+  };
+
+  const onNameChange = (v: string) => {
+    setName(v);
+    if (!skuEdited) setSku(generateSku(v));
+  };
 
   const updateRow = (idx: number, patch: Partial<StockRow>) =>
     setStockRows((rows) => rows.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
