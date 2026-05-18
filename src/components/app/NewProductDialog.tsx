@@ -74,7 +74,7 @@ export function NewProductDialog() {
       initial,
     );
     toast.success(`Product ${name} added${initial.length ? ` with opening stock` : ""}`);
-    setSku(""); setName(""); setCategory(""); setUnit("pcs");
+    setSku(""); setSkuEdited(false); setName(""); setCategory(""); setUnit("pcs");
     setPrice(0); setAvgCost(0); setReorderLevel(0);
     setStockRows([{ warehouseId: defaultWh, quantity: 0 }]);
     setOpen(false);
@@ -88,8 +88,8 @@ export function NewProductDialog() {
       <DialogContent className="max-w-2xl">
         <DialogHeader><DialogTitle>New product</DialogTitle></DialogHeader>
         <div className="grid grid-cols-2 gap-3">
-          <div className="grid gap-1.5"><Label>SKU</Label><Input value={sku} onChange={(e) => setSku(e.target.value)} /></div>
-          <div className="grid gap-1.5"><Label>Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
+          <div className="grid gap-1.5"><Label>Name</Label><Input value={name} onChange={(e) => onNameChange(e.target.value)} /></div>
+          <div className="grid gap-1.5"><Label>SKU</Label><Input value={sku} placeholder="Auto-generated" onChange={(e) => { setSku(e.target.value); setSkuEdited(true); }} /></div>
           <div className="grid gap-1.5"><Label>Category</Label><Input value={category} onChange={(e) => setCategory(e.target.value)} /></div>
           <div className="grid gap-1.5"><Label>Unit</Label><Input value={unit} onChange={(e) => setUnit(e.target.value)} /></div>
           <div className="grid gap-1.5"><Label>Avg cost</Label><Input type="number" min={0} step="0.01" value={avgCost} onChange={(e) => setAvgCost(Number(e.target.value))} /></div>
