@@ -36,6 +36,25 @@ function StockPage() {
       .filter((m) => m.productId === productId && m.warehouseId === warehouseId)
       .reduce((s, m) => s + m.quantity, 0);
 
+  const warehouseName = (id: string) => ws.find((w) => w.id === id)?.name ?? "—";
+  const warehouseLabel = (m: (typeof ms)[number]) => {
+    if (m.type !== "transfer") return warehouseName(m.warehouseId);
+    const pair = ms.find(
+      (x) =>
+        x.id !== m.id &&
+        x.reference === m.reference &&
+        x.productId === m.productId &&
+        x.type === "transfer" &&
+        Math.sign(x.quantity) !== Math.sign(m.quantity),
+    );
+    const fromId = m.quantity < 0 ? m.warehouseId : pair?.warehouseId;
+    const toId = m.quantity > 0 ? m.warehouseId : pair?.warehouseId;
+    return `${warehouseName(fromId ?? "")} → ${warehouseName(toId ?? "")}`;
+  };
+  const visibleMovements = ms.filter(
+    (m) => !(m.type === "transfer" && m.quantity < 0),
+  );
+
   return (
     <>
       <PageHeader
