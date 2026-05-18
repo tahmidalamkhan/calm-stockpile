@@ -6,7 +6,6 @@ import {
   Boxes,
   Warehouse as WarehouseIcon,
   FileText,
-  Truck,
   Users as UsersIcon,
   LogOut,
 } from "lucide-react";
@@ -58,10 +57,6 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { title: "Stock History", to: "/stock-history", icon: FileText },
       { title: "Warehouses", to: "/warehouses", icon: WarehouseIcon },
     ],
-  },
-  {
-    label: "Suppliers",
-    items: [{ title: "Suppliers", to: "/suppliers", icon: Truck }],
   },
   {
     label: "Administration",

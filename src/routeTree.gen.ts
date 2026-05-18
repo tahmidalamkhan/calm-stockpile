@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WarehousesRouteImport } from './routes/warehouses'
 import { Route as UsersRouteImport } from './routes/users'
-import { Route as SuppliersRouteImport } from './routes/suppliers'
 import { Route as StockHistoryRouteImport } from './routes/stock-history'
 import { Route as StockRouteImport } from './routes/stock'
 import { Route as ProductsRouteImport } from './routes/products'
@@ -25,11 +24,6 @@ const WarehousesRoute = WarehousesRouteImport.update({
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
   path: '/users',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SuppliersRoute = SuppliersRouteImport.update({
-  id: '/suppliers',
-  path: '/suppliers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StockHistoryRoute = StockHistoryRouteImport.update({
@@ -58,7 +52,6 @@ export interface FileRoutesByFullPath {
   '/products': typeof ProductsRoute
   '/stock': typeof StockRoute
   '/stock-history': typeof StockHistoryRoute
-  '/suppliers': typeof SuppliersRoute
   '/users': typeof UsersRoute
   '/warehouses': typeof WarehousesRoute
 }
@@ -67,7 +60,6 @@ export interface FileRoutesByTo {
   '/products': typeof ProductsRoute
   '/stock': typeof StockRoute
   '/stock-history': typeof StockHistoryRoute
-  '/suppliers': typeof SuppliersRoute
   '/users': typeof UsersRoute
   '/warehouses': typeof WarehousesRoute
 }
@@ -77,7 +69,6 @@ export interface FileRoutesById {
   '/products': typeof ProductsRoute
   '/stock': typeof StockRoute
   '/stock-history': typeof StockHistoryRoute
-  '/suppliers': typeof SuppliersRoute
   '/users': typeof UsersRoute
   '/warehouses': typeof WarehousesRoute
 }
@@ -88,25 +79,16 @@ export interface FileRouteTypes {
     | '/products'
     | '/stock'
     | '/stock-history'
-    | '/suppliers'
     | '/users'
     | '/warehouses'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/products'
-    | '/stock'
-    | '/stock-history'
-    | '/suppliers'
-    | '/users'
-    | '/warehouses'
+  to: '/' | '/products' | '/stock' | '/stock-history' | '/users' | '/warehouses'
   id:
     | '__root__'
     | '/'
     | '/products'
     | '/stock'
     | '/stock-history'
-    | '/suppliers'
     | '/users'
     | '/warehouses'
   fileRoutesById: FileRoutesById
@@ -116,7 +98,6 @@ export interface RootRouteChildren {
   ProductsRoute: typeof ProductsRoute
   StockRoute: typeof StockRoute
   StockHistoryRoute: typeof StockHistoryRoute
-  SuppliersRoute: typeof SuppliersRoute
   UsersRoute: typeof UsersRoute
   WarehousesRoute: typeof WarehousesRoute
 }
@@ -135,13 +116,6 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof UsersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/suppliers': {
-      id: '/suppliers'
-      path: '/suppliers'
-      fullPath: '/suppliers'
-      preLoaderRoute: typeof SuppliersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/stock-history': {
@@ -180,7 +154,6 @@ const rootRouteChildren: RootRouteChildren = {
   ProductsRoute: ProductsRoute,
   StockRoute: StockRoute,
   StockHistoryRoute: StockHistoryRoute,
-  SuppliersRoute: SuppliersRoute,
   UsersRoute: UsersRoute,
   WarehousesRoute: WarehousesRoute,
 }
