@@ -39,12 +39,28 @@ function Dashboard() {
     .filter((p) => p.qty <= p.reorderLevel);
 
   const recentMovements = ms
+    .filter((m) => !(m.type === "transfer" && m.quantity < 0))
     .slice()
     .sort((a, b) => (a.date < b.date ? 1 : -1))
     .slice(0, 8);
 
   const productName = (id: string) => ps.find((p) => p.id === id)?.name ?? "—";
   const warehouseName = (id: string) => ws.find((w) => w.id === id)?.name ?? "—";
+
+  const warehouseLabel = (m: (typeof ms)[number]) => {
+    if (m.type !== "transfer") return warehouseName(m.warehouseId);
+    const pair = ms.find(
+      (x) =>
+        x.id !== m.id &&
+        x.reference === m.reference &&
+        x.productId === m.productId &&
+        x.type === "transfer" &&
+        Math.sign(x.quantity) !== Math.sign(m.quantity),
+    );
+    const fromId = m.quantity < 0 ? m.warehouseId : pair?.warehouseId;
+    const toId = m.quantity > 0 ? m.warehouseId : pair?.warehouseId;
+    return `${warehouseName(fromId ?? "")} → ${warehouseName(toId ?? "")}`;
+  };
 
   const typeVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
     purchase: "default",
@@ -109,7 +125,7 @@ function Dashboard() {
                         </Badge>
                       </TableCell>
                       <TableCell>{productName(m.productId)}</TableCell>
-                      <TableCell>{warehouseName(m.warehouseId)}</TableCell>
+                      <TableCell>{warehouseLabel(m)}</TableCell>
                       <TableCell
                         className={`text-right font-mono ${m.quantity > 0 ? "text-primary" : "text-destructive"}`}
                       >
