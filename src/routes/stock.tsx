@@ -124,16 +124,16 @@ function StockPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {ms.map((m) => (
+              {visibleMovements.map((m) => (
                 <TableRow key={m.id}>
                   <TableCell>{formatDate(m.date)}</TableCell>
                   <TableCell className="font-mono text-xs">{m.reference}</TableCell>
                   <TableCell>{ps.find((p) => p.id === m.productId)?.name}</TableCell>
-                  <TableCell>{ws.find((w) => w.id === m.warehouseId)?.name}</TableCell>
+                  <TableCell>{warehouseLabel(m)}</TableCell>
                   <TableCell>
                     <Badge variant={m.quantity >= 0 ? "default" : "secondary"}>{m.type}</Badge>
                   </TableCell>
-                  <TableCell className="text-right font-mono">{m.quantity}</TableCell>
+                  <TableCell className="text-right font-mono">{Math.abs(m.quantity)}</TableCell>
                   <TableCell className="text-right font-mono">{formatCurrency(m.unitCost)}</TableCell>
                 </TableRow>
               ))}
