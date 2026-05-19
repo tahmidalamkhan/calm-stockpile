@@ -122,7 +122,7 @@ export function NewProductDialog() {
                   type="number"
                   min={0}
                   placeholder="Quantity"
-                  value={row.quantity}
+                  value={row.quantity || ""}
                   onChange={(e) => updateRow(idx, { quantity: Number(e.target.value) })}
                 />
                 <Button
