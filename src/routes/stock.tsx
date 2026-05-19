@@ -124,28 +124,40 @@ function StockPage() {
       </Card>
 
       <Card>
-        <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
+        <CardHeader className="flex flex-col items-stretch gap-3 space-y-0 sm:flex-row sm:items-end sm:justify-between">
           <CardTitle>Stock movements</CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={visibleMovements.length === 0}
-            onClick={() => {
-              const rows = visibleMovements.map((m) => ({
-                Date: m.date,
-                Reference: m.reference,
-                Product: ps.find((p) => p.id === m.productId)?.name ?? m.productId,
-                Warehouse: warehouseLabel(m),
-                Type: m.type,
-                Quantity: Math.abs(m.quantity),
-                "Unit cost": m.unitCost,
-              }));
-              exportRowsToXlsx(rows, "stock-movements.xlsx", "Movements");
-            }}
-          >
-            <Download className="mr-1 h-4 w-4" /> Export
-          </Button>
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="grid gap-1">
+              <Label className="text-xs">From</Label>
+              <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="h-9 w-40" />
+            </div>
+            <div className="grid gap-1">
+              <Label className="text-xs">To</Label>
+              <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="h-9 w-40" />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={filteredForExport.length === 0}
+              onClick={() => {
+                const rows = filteredForExport.map((m) => ({
+                  Date: m.date,
+                  Reference: m.reference,
+                  Product: ps.find((p) => p.id === m.productId)?.name ?? m.productId,
+                  Warehouse: warehouseLabel(m),
+                  Type: m.type,
+                  Quantity: Math.abs(m.quantity),
+                  "Unit cost": m.unitCost,
+                }));
+                const suffix = fromDate || toDate ? `_${fromDate || "all"}_to_${toDate || "all"}` : "";
+                exportRowsToXlsx(rows, `stock-movements${suffix}.xlsx`, "Movements");
+              }}
+            >
+              <Download className="mr-1 h-4 w-4" /> Export
+            </Button>
+          </div>
         </CardHeader>
+
         <CardContent>
           <Table>
             <TableHeader>
