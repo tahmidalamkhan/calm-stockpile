@@ -148,7 +148,7 @@ export function StockAdjustmentDialog() {
                       <Input
                         type="number" min={0}
                         value={l.countedQty || ""}
-                        onChange={(e) => update(l.id, { countedQty: Number(e.target.value) })}
+                        onChange={(e) => update(l.id, { countedQty: Math.max(0, Number(e.target.value) || 0) })}
                         className="ml-auto h-8 w-24 text-right"
                       />
                     </TableCell>
