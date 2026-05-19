@@ -14,8 +14,12 @@ import { useCompany } from "@/lib/mock/store";
 import { formatDate, formatCurrency } from "@/lib/format";
 import { TransferStockDialog } from "@/components/app/TransferStockDialog";
 import { StockAdjustDialog } from "@/components/app/StockAdjustDialog";
+import { StockAdjustmentDialog } from "@/components/app/StockAdjustmentDialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Download } from "lucide-react";
+import { useState } from "react";
 import { exportRowsToXlsx } from "@/lib/export-xlsx";
 
 export const Route = createFileRoute("/stock")({
