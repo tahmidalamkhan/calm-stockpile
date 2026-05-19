@@ -62,6 +62,14 @@ function StockPage() {
     (m) => !(m.type === "transfer" && m.quantity < 0),
   );
 
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const filteredForExport = visibleMovements.filter((m) => {
+    if (fromDate && m.date < fromDate) return false;
+    if (toDate && m.date > toDate) return false;
+    return true;
+  });
+
   return (
     <>
       <PageHeader
@@ -71,10 +79,12 @@ function StockPage() {
           <div className="flex flex-wrap gap-2">
             <StockAdjustDialog direction="in" />
             <StockAdjustDialog direction="out" />
+            <StockAdjustmentDialog />
             <TransferStockDialog />
           </div>
         }
       />
+
 
       <Card className="mb-6">
         <CardHeader>
