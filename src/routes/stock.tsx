@@ -146,7 +146,10 @@ function StockPage() {
                   Product: ps.find((p) => p.id === m.productId)?.name ?? m.productId,
                   Warehouse: warehouseLabel(m),
                   Type: m.type,
-                  Quantity: Math.abs(m.quantity),
+                  Quantity:
+                    m.type === "adjustment" && m.fromQty !== undefined && m.toQty !== undefined
+                      ? `${m.fromQty} → ${m.toQty}`
+                      : Math.abs(m.quantity),
                   "Unit cost": m.unitCost,
                 }));
                 const suffix = fromDate || toDate ? `_${fromDate || "all"}_to_${toDate || "all"}` : "";
