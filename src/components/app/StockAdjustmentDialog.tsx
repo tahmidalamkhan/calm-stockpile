@@ -80,6 +80,8 @@ export function StockAdjustmentDialog() {
         quantity: delta,
         unitCost: 0,
         reference: ref,
+        fromQty: current,
+        toQty: l.countedQty,
       });
     }
     if (!movements.length) return toast.error("No changes to apply");
