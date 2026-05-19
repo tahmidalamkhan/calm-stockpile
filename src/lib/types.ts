@@ -48,6 +48,8 @@ export type StockMovement = {
   quantity: number;
   unitCost: number;
   reference: string;
+  fromQty?: number;
+  toQty?: number;
 };
 
 export type Supplier = {

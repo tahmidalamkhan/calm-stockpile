@@ -146,7 +146,10 @@ function StockPage() {
                   Product: ps.find((p) => p.id === m.productId)?.name ?? m.productId,
                   Warehouse: warehouseLabel(m),
                   Type: m.type,
-                  Quantity: Math.abs(m.quantity),
+                  Quantity:
+                    m.type === "adjustment" && m.fromQty !== undefined && m.toQty !== undefined
+                      ? `${m.fromQty} → ${m.toQty}`
+                      : Math.abs(m.quantity),
                   "Unit cost": m.unitCost,
                 }));
                 const suffix = fromDate || toDate ? `_${fromDate || "all"}_to_${toDate || "all"}` : "";
@@ -181,8 +184,13 @@ function StockPage() {
                   <TableCell>
                     <Badge variant={m.quantity >= 0 ? "default" : "secondary"}>{m.type}</Badge>
                   </TableCell>
-                  <TableCell className="text-right font-mono">{Math.abs(m.quantity)}</TableCell>
+                  <TableCell className="text-right font-mono">
+                    {m.type === "adjustment" && m.fromQty !== undefined && m.toQty !== undefined
+                      ? `${m.fromQty} → ${m.toQty}`
+                      : Math.abs(m.quantity)}
+                  </TableCell>
                   <TableCell className="text-right font-mono">{formatCurrency(m.unitCost)}</TableCell>
+
                 </TableRow>
               ))}
             </TableBody>
