@@ -11,10 +11,13 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import { useCompany } from "@/lib/mock/store";
 import { NewWarehouseDialog } from "@/components/app/NewWarehouseDialog";
 import { BulkStockImportDialog } from "@/components/app/BulkStockImportDialog";
 import { formatCurrency } from "@/lib/format";
+import { exportRowsToXlsx } from "@/lib/export-xlsx";
 
 export const Route = createFileRoute("/warehouses")({
   head: () => ({
