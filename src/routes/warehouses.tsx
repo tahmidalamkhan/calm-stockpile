@@ -137,20 +137,6 @@ function WarehousesPage() {
               <Download className="mr-1 h-4 w-4" /> Export
             </Button>
           </div>
-              className="w-[220px]"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <Label className="text-sm text-muted-foreground">Warehouse</Label>
-            <Select value={selectedId} onValueChange={setSelectedId}>
-              <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {list.map((w) => (
-                  <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </CardHeader>
         <CardContent>
           <Table>
