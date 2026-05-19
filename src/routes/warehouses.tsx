@@ -115,6 +115,41 @@ function WarehousesPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={productsInWarehouse.length === 0}
+              onClick={() => {
+                const wh = list.find((w) => w.id === selectedId);
+                const rows = productsInWarehouse.map(({ p, qty }) => ({
+                  SKU: p.sku,
+                  Name: p.name,
+                  Category: p.category,
+                  Unit: p.unit,
+                  Quantity: qty,
+                  "Avg cost": p.avgCost,
+                  "Stock value": qty * p.avgCost,
+                }));
+                const safe = (wh?.name ?? "warehouse").replace(/[^\w-]+/g, "_");
+                exportRowsToXlsx(rows, `stock-${safe}.xlsx`, wh?.name ?? "Stock");
+              }}
+            >
+              <Download className="mr-1 h-4 w-4" /> Export
+            </Button>
+          </div>
+              className="w-[220px]"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <Label className="text-sm text-muted-foreground">Warehouse</Label>
+            <Select value={selectedId} onValueChange={setSelectedId}>
+              <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {list.map((w) => (
+                  <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
         <CardContent>
