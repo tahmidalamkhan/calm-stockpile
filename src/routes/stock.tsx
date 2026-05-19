@@ -110,8 +110,27 @@ function StockPage() {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
           <CardTitle>Stock movements</CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={visibleMovements.length === 0}
+            onClick={() => {
+              const rows = visibleMovements.map((m) => ({
+                Date: m.date,
+                Reference: m.reference,
+                Product: ps.find((p) => p.id === m.productId)?.name ?? m.productId,
+                Warehouse: warehouseLabel(m),
+                Type: m.type,
+                Quantity: Math.abs(m.quantity),
+                "Unit cost": m.unitCost,
+              }));
+              exportRowsToXlsx(rows, "stock-movements.xlsx", "Movements");
+            }}
+          >
+            <Download className="mr-1 h-4 w-4" /> Export
+          </Button>
         </CardHeader>
         <CardContent>
           <Table>
