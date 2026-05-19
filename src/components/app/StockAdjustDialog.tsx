@@ -150,7 +150,7 @@ export function StockAdjustDialog({ direction }: { direction: Direction }) {
                       <Input
                         type="number" min={0} max={isIn ? undefined : avail}
                         value={l.quantity || ""}
-                        onChange={(e) => update(l.id, { quantity: Number(e.target.value) })}
+                        onChange={(e) => update(l.id, { quantity: Math.max(0, Number(e.target.value) || 0) })}
                         className="ml-auto h-8 w-24 text-right"
                       />
                     </TableCell>
