@@ -14,8 +14,12 @@ import { useCompany } from "@/lib/mock/store";
 import { formatDate, formatCurrency } from "@/lib/format";
 import { TransferStockDialog } from "@/components/app/TransferStockDialog";
 import { StockAdjustDialog } from "@/components/app/StockAdjustDialog";
+import { StockAdjustmentDialog } from "@/components/app/StockAdjustmentDialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Download } from "lucide-react";
+import { useState } from "react";
 import { exportRowsToXlsx } from "@/lib/export-xlsx";
 
 export const Route = createFileRoute("/stock")({
@@ -58,6 +62,14 @@ function StockPage() {
     (m) => !(m.type === "transfer" && m.quantity < 0),
   );
 
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const filteredForExport = visibleMovements.filter((m) => {
+    if (fromDate && m.date < fromDate) return false;
+    if (toDate && m.date > toDate) return false;
+    return true;
+  });
+
   return (
     <>
       <PageHeader
@@ -67,10 +79,12 @@ function StockPage() {
           <div className="flex flex-wrap gap-2">
             <StockAdjustDialog direction="in" />
             <StockAdjustDialog direction="out" />
+            <StockAdjustmentDialog />
             <TransferStockDialog />
           </div>
         }
       />
+
 
       <Card className="mb-6">
         <CardHeader>
@@ -110,28 +124,40 @@ function StockPage() {
       </Card>
 
       <Card>
-        <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
+        <CardHeader className="flex flex-col items-stretch gap-3 space-y-0 sm:flex-row sm:items-end sm:justify-between">
           <CardTitle>Stock movements</CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={visibleMovements.length === 0}
-            onClick={() => {
-              const rows = visibleMovements.map((m) => ({
-                Date: m.date,
-                Reference: m.reference,
-                Product: ps.find((p) => p.id === m.productId)?.name ?? m.productId,
-                Warehouse: warehouseLabel(m),
-                Type: m.type,
-                Quantity: Math.abs(m.quantity),
-                "Unit cost": m.unitCost,
-              }));
-              exportRowsToXlsx(rows, "stock-movements.xlsx", "Movements");
-            }}
-          >
-            <Download className="mr-1 h-4 w-4" /> Export
-          </Button>
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="grid gap-1">
+              <Label className="text-xs">From</Label>
+              <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="h-9 w-40" />
+            </div>
+            <div className="grid gap-1">
+              <Label className="text-xs">To</Label>
+              <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="h-9 w-40" />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={filteredForExport.length === 0}
+              onClick={() => {
+                const rows = filteredForExport.map((m) => ({
+                  Date: m.date,
+                  Reference: m.reference,
+                  Product: ps.find((p) => p.id === m.productId)?.name ?? m.productId,
+                  Warehouse: warehouseLabel(m),
+                  Type: m.type,
+                  Quantity: Math.abs(m.quantity),
+                  "Unit cost": m.unitCost,
+                }));
+                const suffix = fromDate || toDate ? `_${fromDate || "all"}_to_${toDate || "all"}` : "";
+                exportRowsToXlsx(rows, `stock-movements${suffix}.xlsx`, "Movements");
+              }}
+            >
+              <Download className="mr-1 h-4 w-4" /> Export
+            </Button>
+          </div>
         </CardHeader>
+
         <CardContent>
           <Table>
             <TableHeader>
