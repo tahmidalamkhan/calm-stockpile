@@ -11,10 +11,13 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import { useCompany } from "@/lib/mock/store";
 import { NewWarehouseDialog } from "@/components/app/NewWarehouseDialog";
 import { BulkStockImportDialog } from "@/components/app/BulkStockImportDialog";
 import { formatCurrency } from "@/lib/format";
+import { exportRowsToXlsx } from "@/lib/export-xlsx";
 
 export const Route = createFileRoute("/warehouses")({
   head: () => ({
@@ -112,6 +115,27 @@ function WarehousesPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={productsInWarehouse.length === 0}
+              onClick={() => {
+                const wh = list.find((w) => w.id === selectedId);
+                const rows = productsInWarehouse.map(({ p, qty }) => ({
+                  SKU: p.sku,
+                  Name: p.name,
+                  Category: p.category,
+                  Unit: p.unit,
+                  Quantity: qty,
+                  "Avg cost": p.avgCost,
+                  "Stock value": qty * p.avgCost,
+                }));
+                const safe = (wh?.name ?? "warehouse").replace(/[^\w-]+/g, "_");
+                exportRowsToXlsx(rows, `stock-${safe}.xlsx`, wh?.name ?? "Stock");
+              }}
+            >
+              <Download className="mr-1 h-4 w-4" /> Export
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
