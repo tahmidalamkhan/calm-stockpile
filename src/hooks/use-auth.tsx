@@ -17,33 +17,45 @@ type AuthValue = {
 
 const AuthCtx = React.createContext<AuthValue | null>(null);
 
+const ROLE_KEY = "stockhub.role";
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = React.useState<Session | null>(null);
-  const [role, setRole] = React.useState<Role | null>(null);
+  const [role, setRole] = React.useState<Role | null>(() => {
+    if (typeof window === "undefined") return null;
+    const cached = window.localStorage.getItem(ROLE_KEY);
+    return cached === "admin" || cached === "staff" ? cached : null;
+  });
   const [loading, setLoading] = React.useState(true);
 
   const loadRole = React.useCallback(async () => {
     try {
       const { role } = await getMyRole();
       setRole(role);
+      if (typeof window !== "undefined") window.localStorage.setItem(ROLE_KEY, role);
     } catch {
       setRole(null);
+      if (typeof window !== "undefined") window.localStorage.removeItem(ROLE_KEY);
     }
   }, []);
 
   React.useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
-      if (s) {
-        setTimeout(() => void loadRole(), 0);
-      } else {
+      setLoading(false);
+      if (!s) {
         setRole(null);
+        if (typeof window !== "undefined") window.localStorage.removeItem(ROLE_KEY);
+      } else if (event === "SIGNED_IN") {
+        void loadRole();
       }
     });
-    supabase.auth.getSession().then(async ({ data }) => {
+    supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      if (data.session) await loadRole();
       setLoading(false);
+      if (data.session && typeof window !== "undefined" && !window.localStorage.getItem(ROLE_KEY)) {
+        void loadRole();
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, [loadRole]);
