@@ -12,7 +12,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { useCompany } from "@/lib/mock/store";
-import type { Product, StockMovement } from "@/lib/types";
+import type { StockMovement } from "@/lib/types";
 import { toast } from "sonner";
 
 type Row = {
@@ -79,7 +79,7 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
     XLSX.writeFile(wb, "stock-import-template.xlsx");
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!warehouseId) return toast.error("Pick a warehouse");
     const valid = rows.filter((r) => r.status !== "invalid");
     if (!valid.length) return toast.error("No valid rows to import");
@@ -88,12 +88,12 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
     const today = new Date().toISOString().slice(0, 10);
     const ts = Date.now();
 
-    valid.forEach((row, idx) => {
+    for (let idx = 0; idx < valid.length; idx++) {
+      const row = valid[idx];
       let productId = row.productId;
       if (row.status === "new") {
-        productId = `p-${ts}-${idx}`;
-        const newProduct: Product = {
-          id: productId,
+        const created = await addProduct({
+          id: "",
           companyId: activeCompanyId,
           sku: row.sku || `BULK-${ts.toString().slice(-5)}-${idx + 1}`,
           name: row.name || row.sku,
@@ -102,11 +102,12 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
           avgCost: row.cost,
           price: row.cost,
           reorderLevel: 0,
-        };
-        addProduct(newProduct);
+        });
+        if (!created) continue;
+        productId = created.id;
       }
       movements.push({
-        id: `sm-bulk-${ts}-${idx}`,
+        id: "",
         companyId: activeCompanyId,
         date: today,
         productId: productId!,
@@ -116,9 +117,9 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
         unitCost: row.cost,
         reference: `BULK-${fileName || "import"}`,
       });
-    });
+    }
 
-    addStockMovements(movements);
+    await addStockMovements(movements);
     toast.success(`Imported ${valid.length} row(s)`);
     setRows([]);
     setFileName("");
