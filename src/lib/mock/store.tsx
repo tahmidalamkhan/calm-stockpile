@@ -224,7 +224,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         })
         .select()
         .single();
-      if (error || !data) throw new Error(error?.message ?? "Insert failed");
+      if (error || !data) { toast.error(`Warehouse: ${error?.message ?? "insert failed"}`); return; }
       setWarehouses((prev) => [mapWarehouse(data), ...prev]);
     },
     [activeCompanyId],
@@ -244,7 +244,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         })
         .select()
         .single();
-      if (error || !data) throw new Error(error?.message ?? "Insert failed");
+      if (error || !data) { toast.error(`Supplier: ${error?.message ?? "insert failed"}`); return; }
       setSuppliers((prev) => [mapSupplier(data), ...prev]);
     },
     [activeCompanyId],
@@ -269,7 +269,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         .from("stock_movements")
         .insert(payload)
         .select();
-      if (error) throw new Error(error.message);
+      if (error) { toast.error(`Stock movement: ${error.message}`); return []; }
       const mapped = (data ?? []).map(mapMovement);
       setStockMovements((prev) => [...mapped, ...prev]);
       return mapped;
@@ -307,7 +307,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         })
         .select()
         .single();
-      if (error || !data) throw new Error(error?.message ?? "Insert failed");
+      if (error || !data) { toast.error(`Product: ${error?.message ?? "insert failed"}`); return; }
       const created = mapProduct(data);
       setProducts((prev) => [created, ...prev]);
 
