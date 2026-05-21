@@ -27,16 +27,9 @@ export const Route = createFileRoute("/products")({
   }),
   component: ProductsPage,
 });
-    meta: [
-      { title: "Products — StockHub" },
-      { name: "description", content: "Catalog of inventory products with cost, price, and on-hand quantity." },
-    ],
-  }),
-  component: ProductsPage,
-});
 
 function ProductsPage() {
-  const { activeCompanyId, products, stockMovements, warehouses } = useCompany();
+  const { activeCompanyId, products, stockMovements, warehouses, deleteProduct } = useCompany();
   const [query, setQuery] = React.useState("");
   const all = products.filter((p) => p.companyId === activeCompanyId);
   const q = query.trim().toLowerCase();
