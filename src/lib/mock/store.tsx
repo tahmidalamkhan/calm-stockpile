@@ -39,6 +39,7 @@ type CompanyContextValue = {
     items: { productId: ID; quantity: number }[];
     reference: string;
   }) => Promise<void>;
+  deleteProduct: (id: ID) => Promise<void>;
 };
 
 const CompanyContext = React.createContext<CompanyContextValue | null>(null);
@@ -366,6 +367,22 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     [activeCompanyId, insertMovementsRaw],
   );
 
+  const deleteProduct: CompanyContextValue["deleteProduct"] = React.useCallback(
+    async (id) => {
+      // remove movements first (FK-free but logically related)
+      const { error: mErr } = await supabase.from("stock_movements").delete().eq("product_id", id);
+      if (mErr) { toast.error(`Delete movements: ${mErr.message}`); return; }
+      const { error: lErr } = await supabase.from("stock_levels").delete().eq("product_id", id);
+      if (lErr) { toast.error(`Delete stock levels: ${lErr.message}`); return; }
+      const { error } = await supabase.from("products").delete().eq("id", id);
+      if (error) { toast.error(`Delete product: ${error.message}`); return; }
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+      setStockMovements((prev) => prev.filter((m) => m.productId !== id));
+      toast.success("Product deleted");
+    },
+    [],
+  );
+
   const value = React.useMemo<CompanyContextValue>(
     () => ({
       companies,
@@ -382,6 +399,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       addStockMovement,
       addStockMovements,
       transferStock,
+      deleteProduct,
     }),
     [
       companies,
@@ -397,6 +415,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       addStockMovement,
       addStockMovements,
       transferStock,
+      deleteProduct,
     ],
   );
 
