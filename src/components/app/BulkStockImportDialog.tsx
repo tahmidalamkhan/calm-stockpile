@@ -12,7 +12,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { useCompany } from "@/lib/mock/store";
-import type { Product, StockMovement } from "@/lib/types";
+import type { StockMovement } from "@/lib/types";
 import { toast } from "sonner";
 
 type Row = {
