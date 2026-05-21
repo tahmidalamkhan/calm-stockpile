@@ -77,16 +77,24 @@ function Dashboard() {
       />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Products" value={formatNumber(ps.length)} icon={Package} hint="Active SKUs" />
-        <StatCard title="Stock value" value={formatCurrency(stockValue)} icon={Boxes} hint={`${formatNumber(totalUnits)} units on hand`} />
-        <StatCard title="Warehouses" value={formatNumber(ws.length)} icon={WarehouseIcon} hint="Storage locations" />
-        <StatCard
-          title="Low stock"
-          value={formatNumber(lowStock.length)}
-          icon={AlertTriangle}
-          trend={lowStock.length > 0 ? "down" : "up"}
-          hint={lowStock.length > 0 ? "Need reordering" : "All levels healthy"}
-        />
+        <Link to="/products" className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg">
+          <StatCard title="Products" value={formatNumber(ps.length)} icon={Package} hint="Active SKUs" />
+        </Link>
+        <Link to="/stock" className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg">
+          <StatCard title="Stock value" value={formatCurrency(stockValue)} icon={Boxes} hint={`${formatNumber(totalUnits)} units on hand`} />
+        </Link>
+        <Link to="/warehouses" className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg">
+          <StatCard title="Warehouses" value={formatNumber(ws.length)} icon={WarehouseIcon} hint="Storage locations" />
+        </Link>
+        <Link to="/products" className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg">
+          <StatCard
+            title="Low stock"
+            value={formatNumber(lowStock.length)}
+            icon={AlertTriangle}
+            trend={lowStock.length > 0 ? "down" : "up"}
+            hint={lowStock.length > 0 ? "Need reordering" : "All levels healthy"}
+          />
+        </Link>
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
