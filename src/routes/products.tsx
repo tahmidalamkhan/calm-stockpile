@@ -1,18 +1,32 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/app/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useCompany } from "@/lib/mock/store";
 import { formatCurrency } from "@/lib/format";
 import { NewProductDialog } from "@/components/app/NewProductDialog";
 
 export const Route = createFileRoute("/products")({
   head: () => ({
+    meta: [
+      { title: "Products — StockHub" },
+      { name: "description", content: "Catalog of inventory products with cost, price, and on-hand quantity." },
+    ],
+  }),
+  component: ProductsPage,
+});
     meta: [
       { title: "Products — StockHub" },
       { name: "description", content: "Catalog of inventory products with cost, price, and on-hand quantity." },
