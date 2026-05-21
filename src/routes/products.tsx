@@ -82,6 +82,7 @@ function ProductsPage() {
                 <TableHead className="text-right">Price</TableHead>
                 <TableHead className="text-right">On hand</TableHead>
                 <TableHead className="text-right">Reorder</TableHead>
+                <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
