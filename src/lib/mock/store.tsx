@@ -39,6 +39,7 @@ type CompanyContextValue = {
     items: { productId: ID; quantity: number }[];
     reference: string;
   }) => Promise<void>;
+  deleteProduct: (id: ID) => Promise<void>;
 };
 
 const CompanyContext = React.createContext<CompanyContextValue | null>(null);
