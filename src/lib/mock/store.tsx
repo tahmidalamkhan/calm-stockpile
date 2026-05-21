@@ -307,7 +307,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         })
         .select()
         .single();
-      if (error || !data) { toast.error(`Product: ${error?.message ?? "insert failed"}`); return; }
+      if (error || !data) { toast.error(`Product: ${error?.message ?? "insert failed"}`); return null; }
       const created = mapProduct(data);
       setProducts((prev) => [created, ...prev]);
 
@@ -328,6 +328,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
           }));
         if (movements.length) await insertMovementsRaw(movements);
       }
+      return created;
     },
     [activeCompanyId, insertMovementsRaw],
   );
