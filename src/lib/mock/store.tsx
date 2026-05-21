@@ -399,6 +399,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       addStockMovement,
       addStockMovements,
       transferStock,
+      deleteProduct,
     }),
     [
       companies,
@@ -414,6 +415,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       addStockMovement,
       addStockMovements,
       transferStock,
+      deleteProduct,
     ],
   );
 
