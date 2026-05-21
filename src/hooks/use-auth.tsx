@@ -1,7 +1,6 @@
 import * as React from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
-import { getMyRole } from "@/lib/auth.functions";
+import { supabase } from "@/integrations/supabase/custom-client";
 
 export type Role = "admin" | "staff";
 
@@ -30,9 +29,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadRole = React.useCallback(async () => {
     try {
-      const { role } = await getMyRole();
-      setRole(role);
-      if (typeof window !== "undefined") window.localStorage.setItem(ROLE_KEY, role);
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error("no user");
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userData.user.id);
+      if (error) throw error;
+      const roles = (data ?? []).map((r) => r.role as Role);
+      const resolved: Role = roles.includes("admin") ? "admin" : "staff";
+      setRole(resolved);
+      if (typeof window !== "undefined") window.localStorage.setItem(ROLE_KEY, resolved);
     } catch {
       setRole(null);
       if (typeof window !== "undefined") window.localStorage.removeItem(ROLE_KEY);
