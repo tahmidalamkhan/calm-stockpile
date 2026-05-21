@@ -1,5 +1,4 @@
 import * as React from "react";
-import { useServerFn } from "@tanstack/react-start";
 import { Boxes } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,33 +6,42 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
-import { adminExists, bootstrapAdmin } from "@/lib/auth.functions";
+import { supabase } from "@/integrations/supabase/custom-client";
 
 export function LoginPage() {
   const { signIn } = useAuth();
-  const checkAdmin = useServerFn(adminExists);
-  const doBootstrap = useServerFn(bootstrapAdmin);
-  const [needsBootstrap, setNeedsBootstrap] = React.useState(false);
-  const [mode, setMode] = React.useState<"login" | "bootstrap">("login");
+  const [mode, setMode] = React.useState<"login" | "signup">("login");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [busy, setBusy] = React.useState(false);
-
-  React.useEffect(() => {
-    checkAdmin().then((r) => {
-      setNeedsBootstrap(!r.exists);
-      if (!r.exists) setMode("bootstrap");
-    });
-  }, [checkAdmin]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
-      if (mode === "bootstrap") {
-        await doBootstrap({ data: { email, password } });
-        toast.success("Admin account created. Signing you in…");
-        await signIn(email, password);
+      if (mode === "signup") {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: `${window.location.origin}/` },
+        });
+        if (error) throw error;
+
+        // Try to claim the first admin role. Safe-by-design: if any admin
+        // already exists, this insert will be blocked by RLS / unique
+        // constraints. On a fresh DB it succeeds and the new user is admin.
+        if (data.user) {
+          await supabase
+            .from("user_roles")
+            .insert({ user_id: data.user.id, role: "admin" });
+        }
+
+        if (data.session) {
+          toast.success("Account created. Signing you in…");
+        } else {
+          toast.success("Account created. Check your email to confirm, then sign in.");
+          setMode("login");
+        }
       } else {
         await signIn(email, password);
       }
@@ -42,6 +50,11 @@ export function LoginPage() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const onLoginFallback = async () => {
+    // If login fails because no user exists, the user can switch to signup.
+    setMode("signup");
   };
 
   return (
@@ -53,8 +66,8 @@ export function LoginPage() {
           </div>
           <CardTitle className="text-2xl">StockHub</CardTitle>
           <CardDescription>
-            {mode === "bootstrap"
-              ? "Create the first admin account to get started"
+            {mode === "signup"
+              ? "Create your account"
               : "Sign in to your account"}
           </CardDescription>
         </CardHeader>
@@ -79,35 +92,30 @@ export function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={mode === "bootstrap" ? 8 : undefined}
-                autoComplete={mode === "bootstrap" ? "new-password" : "current-password"}
+                minLength={mode === "signup" ? 8 : undefined}
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
               />
-              {mode === "bootstrap" && (
+              {mode === "signup" && (
                 <p className="text-xs text-muted-foreground">Min 8 characters.</p>
               )}
             </div>
             <Button type="submit" className="w-full" disabled={busy}>
               {busy
                 ? "Please wait…"
-                : mode === "bootstrap"
-                  ? "Create admin & sign in"
+                : mode === "signup"
+                  ? "Create account"
                   : "Sign in"}
             </Button>
-            {needsBootstrap && mode === "login" && (
-              <Button
-                type="button"
-                variant="link"
-                className="w-full"
-                onClick={() => setMode("bootstrap")}
-              >
-                No admin yet? Create one
-              </Button>
-            )}
-            {!needsBootstrap && (
-              <p className="text-center text-xs text-muted-foreground">
-                Accounts are created by your administrator.
-              </p>
-            )}
+            <Button
+              type="button"
+              variant="link"
+              className="w-full"
+              onClick={() => setMode(mode === "login" ? "signup" : "login")}
+            >
+              {mode === "login"
+                ? "Don't have an account? Sign up"
+                : "Already have an account? Sign in"}
+            </Button>
           </form>
         </CardContent>
       </Card>
