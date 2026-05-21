@@ -1,44 +1,45 @@
-# Bulk import by SKU, warehouse-wise
+## Why the Dashboard item is missing on Vercel
 
-## Flow
-- User picks one destination **warehouse** in the dialog (as today).
-- User uploads an Excel file with columns: `sku`, `name`, `quantity`, `cost`.
-- One file = one warehouse. To stock the same products in another warehouse, the user runs the import again and picks that warehouse. The same SKU naturally ends up in multiple warehouses because stock movements are per `(productId, warehouseId)`.
+In `src/components/app/AppLayout.tsx`, both **Dashboard** and **Users** nav items are gated by `roles: ["admin"]`. The role is loaded by `getMyRole()` (a TanStack server function in `src/lib/auth.functions.ts`) which runs server-side and uses:
 
-## SKU matching rules
-For each row:
-1. **SKU required.** Rows with no SKU → marked `invalid` ("Missing SKU").
-2. Look up an existing product by `sku` (case-insensitive, trimmed).
-   - **Found** → status `existing`. Create a stock adjustment movement into the chosen warehouse using that `productId`. The product itself is not duplicated, so the same SKU now has stock in this warehouse in addition to wherever it already existed.
-   - **Not found** → status `new`. Create a new product using the SKU and name from the file (category `Imported`, unit `pcs`, `avgCost` = cost, `price` = cost, `reorderLevel` = 0), then create the adjustment movement into the chosen warehouse.
-3. Quantity must be > 0, otherwise `invalid`.
+- `SUPABASE_URL`
+- `SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (used by `supabaseAdmin`)
 
-## Preview table (in dialog)
-Columns: SKU, Name, Quantity, Cost, Status.
-Status chip:
-- `New product` (SKU not seen before)
-- `Update existing` (SKU matches a product)
-- `Invalid` with reason (missing SKU, missing/zero quantity)
+Plus the browser client uses:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
 
-Summary chips above the table: New / Existing / Invalid counts.
+On Vercel these are not auto-injected (only Lovable Cloud injects them). When `getMyRole()` fails, the catch in `use-auth.tsx` sets `role = null` and clears the cached role — so admin-only links disappear, even though login still works (login uses only the browser client, which may have the VITE_ vars baked in at build).
 
-## Excel template
-Downloadable template updated to:
+## Fix — Step 1: Add env vars to Vercel
 
-```text
-sku            | name                | quantity | cost
-SKU-001        | Sample Product A    | 10       | 12.5
-SKU-002        | Sample Product B    | 5        | 30
+In Vercel → Project → Settings → Environment Variables, add (for Production + Preview):
+
+```
+VITE_SUPABASE_URL              = https://sftddziyozbsmeezscah.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY  = <anon key from .env>
+SUPABASE_URL                   = https://sftddziyozbsmeezscah.supabase.co
+SUPABASE_PUBLISHABLE_KEY       = <same anon key>
+SUPABASE_SERVICE_ROLE_KEY      = <service role key — get from Lovable Cloud → Backend>
 ```
 
-Accepted header variants (case-insensitive): `sku`/`SKU`, `name`, `quantity`/`qty`, `cost`/`price`.
+Then **Redeploy** (a rebuild is required because `VITE_*` vars are bundled at build time).
 
-## Files to change
-- `src/components/app/BulkStockImportDialog.tsx`
-  - Add `sku` to the `Row` type; parse it from the sheet.
-  - Replace name-based lookup with SKU-based lookup against `products`.
-  - Use the uploaded `sku` (not a generated `BULK-…` code) when creating new products; fall back to a generated SKU only if a row is `new` and the SKU somehow ended up blank (shouldn't happen given validation).
-  - Update preview table to show SKU column.
-  - Update template download to include the `sku` column.
+## Fix — Step 2: Verify server functions actually run on Vercel
 
-No schema or auth changes. The `/warehouses` page already opens this dialog with the warehouse preselected, so the warehouse-wise workflow is already in place.
+This project ships with `wrangler.jsonc` and is built for **Cloudflare Workers**, not Vercel. TanStack Start needs a Vercel preset to deploy server functions on Vercel. Two options:
+
+- **Recommended:** Deploy on Cloudflare Pages/Workers (matches current config) or just use Lovable's built-in Publish — both already have env vars wired up.
+- **Stay on Vercel:** add the Vercel deployment preset to `vite.config.ts` (TanStack Start `target: 'vercel'`) so server functions are emitted as Vercel Functions. Without this, `getMyRole` returns a 404/HTML and the role load silently fails.
+
+## How to verify after deploying
+
+1. Open the deployed site, log in, open DevTools → Network.
+2. Look for the `getMyRole` request. Expected: `200` with `{ role: "admin" }`. If you see 404 / HTML / 500, it's the deployment preset (Step 2). If you see 500 with a Supabase error, it's the env vars (Step 1).
+3. After a successful response, the Dashboard link appears immediately.
+
+## Notes
+
+- No source code changes are needed — this is purely a deployment configuration issue.
+- The role is cached in `localStorage` under `stockhub.role`, so once it loads once successfully on the Vercel domain, it sticks across reloads.
