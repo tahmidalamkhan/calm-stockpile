@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/custom-client";
+import { supabase } from "@/integrations/supabase/client";
 
 export function LoginPage() {
   const { signIn } = useAuth();
