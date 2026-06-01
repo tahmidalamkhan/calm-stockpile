@@ -2,7 +2,7 @@
 // Keeps the original CompanyProvider/useCompany API so existing components
 // keep working without changes.
 import * as React from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/custom-client";
 import { toast } from "sonner";
 import type {
   Company,
