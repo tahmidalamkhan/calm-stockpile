@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/custom-client";
+import { supabase } from "@/integrations/supabase/client";
 
 export type Role = "admin" | "staff";
 
