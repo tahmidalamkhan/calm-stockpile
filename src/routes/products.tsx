@@ -80,6 +80,7 @@ function ProductsPage() {
                 <TableHead>SKU</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Category</TableHead>
+                <TableHead>Unit</TableHead>
                 <TableHead>Warehouses</TableHead>
                 <TableHead className="text-right">Avg cost</TableHead>
                 <TableHead className="text-right">Price</TableHead>
@@ -98,6 +99,7 @@ function ProductsPage() {
                     <TableCell className="font-mono text-xs">{p.sku}</TableCell>
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell>{p.category}</TableCell>
+                    <TableCell className="text-muted-foreground">{p.unit}</TableCell>
                     <TableCell>
                       {locations.length === 0 ? (
                         <span className="text-xs text-muted-foreground">—</span>
