@@ -171,6 +171,14 @@ function ProductsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {editing && (
+        <EditProductDialog
+          product={editing}
+          open={!!editing}
+          onOpenChange={(o) => { if (!o) setEditing(null); }}
+        />
+      )}
     </>
   );
 }
