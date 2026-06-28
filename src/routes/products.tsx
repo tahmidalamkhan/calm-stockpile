@@ -122,6 +122,16 @@ function ProductsPage() {
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">{p.reorderLevel}</TableCell>
                     <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-foreground"
+                        aria-label={`Edit ${p.name}`}
+                        onClick={() => setEditing(p)}
+                      >
+                        <Pencil />
+                      </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
