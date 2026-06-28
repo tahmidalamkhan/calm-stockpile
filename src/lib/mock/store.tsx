@@ -40,6 +40,7 @@ type CompanyContextValue = {
     reference: string;
   }) => Promise<void>;
   deleteProduct: (id: ID) => Promise<void>;
+  updateProduct: (p: Product) => Promise<void>;
 };
 
 const CompanyContext = React.createContext<CompanyContextValue | null>(null);
@@ -383,6 +384,31 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const updateProduct: CompanyContextValue["updateProduct"] = React.useCallback(
+    async (p) => {
+      const { data, error } = await supabase
+        .from("products")
+        .update({
+          sku: p.sku,
+          name: p.name,
+          category: p.category || null,
+          unit: p.unit || "pcs",
+          avg_cost: p.avgCost ?? 0,
+          price: p.price ?? 0,
+          reorder_level: p.reorderLevel ?? 0,
+        })
+        .eq("id", p.id)
+        .select()
+        .single();
+      if (error || !data) { toast.error(`Update product: ${error?.message ?? "failed"}`); return; }
+      const updated = mapProduct(data);
+      setProducts((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+      toast.success("Product updated");
+    },
+    [],
+  );
+
+
   const value = React.useMemo<CompanyContextValue>(
     () => ({
       companies,
@@ -400,6 +426,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       addStockMovements,
       transferStock,
       deleteProduct,
+      updateProduct,
     }),
     [
       companies,
@@ -416,6 +443,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       addStockMovements,
       transferStock,
       deleteProduct,
+      updateProduct,
     ],
   );
 

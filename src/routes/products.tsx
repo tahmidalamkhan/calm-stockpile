@@ -1,6 +1,6 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/app/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,8 @@ import {
 import { useCompany } from "@/lib/mock/store";
 import { formatCurrency } from "@/lib/format";
 import { NewProductDialog } from "@/components/app/NewProductDialog";
+import { EditProductDialog } from "@/components/app/EditProductDialog";
+import type { Product } from "@/lib/types";
 
 export const Route = createFileRoute("/products")({
   head: () => ({
@@ -31,6 +33,7 @@ export const Route = createFileRoute("/products")({
 function ProductsPage() {
   const { activeCompanyId, products, stockMovements, warehouses, deleteProduct } = useCompany();
   const [query, setQuery] = React.useState("");
+  const [editing, setEditing] = React.useState<Product | null>(null);
   const all = products.filter((p) => p.companyId === activeCompanyId);
   const q = query.trim().toLowerCase();
   const list = q
@@ -119,6 +122,16 @@ function ProductsPage() {
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">{p.reorderLevel}</TableCell>
                     <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-foreground"
+                        aria-label={`Edit ${p.name}`}
+                        onClick={() => setEditing(p)}
+                      >
+                        <Pencil />
+                      </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
@@ -149,6 +162,7 @@ function ProductsPage() {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -157,6 +171,14 @@ function ProductsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {editing && (
+        <EditProductDialog
+          product={editing}
+          open={!!editing}
+          onOpenChange={(o) => { if (!o) setEditing(null); }}
+        />
+      )}
     </>
   );
 }
