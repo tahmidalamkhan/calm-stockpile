@@ -17,6 +17,8 @@ import {
 import { useCompany } from "@/lib/mock/store";
 import { formatCurrency } from "@/lib/format";
 import { NewProductDialog } from "@/components/app/NewProductDialog";
+import { EditProductDialog } from "@/components/app/EditProductDialog";
+import type { Product } from "@/lib/types";
 
 export const Route = createFileRoute("/products")({
   head: () => ({
