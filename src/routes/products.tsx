@@ -33,6 +33,7 @@ export const Route = createFileRoute("/products")({
 function ProductsPage() {
   const { activeCompanyId, products, stockMovements, warehouses, deleteProduct } = useCompany();
   const [query, setQuery] = React.useState("");
+  const [editing, setEditing] = React.useState<Product | null>(null);
   const all = products.filter((p) => p.companyId === activeCompanyId);
   const q = query.trim().toLowerCase();
   const list = q
