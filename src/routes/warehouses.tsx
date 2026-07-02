@@ -12,7 +12,12 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, Trash2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useCompany } from "@/lib/mock/store";
 import { NewWarehouseDialog } from "@/components/app/NewWarehouseDialog";
 import { BulkStockImportDialog } from "@/components/app/BulkStockImportDialog";
