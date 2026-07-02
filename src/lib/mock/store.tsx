@@ -30,6 +30,7 @@ type CompanyContextValue = {
     initialStock?: { warehouseId: ID; quantity: number; unitCost: number }[],
   ) => Promise<Product | null>;
   addWarehouse: (w: Warehouse) => Promise<void>;
+  deleteWarehouse: (id: ID) => Promise<void>;
   addStockMovement: (m: StockMovement) => Promise<void>;
   addStockMovements: (m: StockMovement[]) => Promise<void>;
   transferStock: (args: {
