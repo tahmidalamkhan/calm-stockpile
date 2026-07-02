@@ -35,7 +35,7 @@ export const Route = createFileRoute("/warehouses")({
 });
 
 function WarehousesPage() {
-  const { activeCompanyId, warehouses, products, stockMovements } = useCompany();
+  const { activeCompanyId, warehouses, products, stockMovements, deleteWarehouse } = useCompany();
   const list = warehouses.filter((w) => w.companyId === activeCompanyId);
   const ps = products.filter((p) => p.companyId === activeCompanyId);
 
