@@ -233,6 +233,22 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     [activeCompanyId],
   );
 
+  const deleteWarehouse: CompanyContextValue["deleteWarehouse"] = React.useCallback(
+    async (id) => {
+      const { error: mErr } = await supabase.from("stock_movements").delete().eq("warehouse_id", id);
+      if (mErr) { toast.error(`Delete movements: ${mErr.message}`); return; }
+      const { error: lErr } = await supabase.from("stock_levels").delete().eq("warehouse_id", id);
+      if (lErr) { toast.error(`Delete stock levels: ${lErr.message}`); return; }
+      const { error } = await supabase.from("warehouses").delete().eq("id", id);
+      if (error) { toast.error(`Delete warehouse: ${error.message}`); return; }
+      setWarehouses((prev) => prev.filter((w) => w.id !== id));
+      setStockMovements((prev) => prev.filter((m) => m.warehouseId !== id));
+      toast.success("Warehouse deleted");
+    },
+    [],
+  );
+
+
   const addSupplier: CompanyContextValue["addSupplier"] = React.useCallback(
     async (s) => {
       const { data, error } = await supabase
