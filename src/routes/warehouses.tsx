@@ -89,9 +89,9 @@ function WarehousesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {list.map((w, i) => (
+              {list.map((w) => (
                 <TableRow key={w.id}>
-                  <TableCell className="font-mono text-xs">{i + 1}</TableCell>
+                  <TableCell className="font-mono text-xs">{w.code}</TableCell>
                   <TableCell className="font-medium">{w.name}</TableCell>
                   <TableCell className="text-muted-foreground">{w.address}</TableCell>
                   <TableCell>{w.isDefault && <Badge>Default</Badge>}</TableCell>
