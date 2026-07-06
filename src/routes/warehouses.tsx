@@ -109,7 +109,7 @@ function WarehousesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {list.map((w) => (
+              {sortedList.map((w) => (
                 <TableRow key={w.id}>
                   <TableCell className="font-mono text-xs">{w.code}</TableCell>
                   <TableCell className="font-medium">{w.name}</TableCell>
