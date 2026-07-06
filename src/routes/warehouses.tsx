@@ -93,7 +93,15 @@ function WarehousesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
+                <TableHead
+                  className="cursor-pointer select-none"
+                  onClick={toggleSort}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    Code
+                    <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                  </span>
+                </TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Address</TableHead>
                 <TableHead>Default</TableHead>
