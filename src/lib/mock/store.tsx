@@ -459,6 +459,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       addProduct,
       addWarehouse,
       deleteWarehouse,
+      setDefaultWarehouse,
       addStockMovement,
       addStockMovements,
       transferStock,
