@@ -12,7 +12,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Download, Trash2, Star } from "lucide-react";
+import { Download, Trash2, Star, ArrowUpDown } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -55,6 +55,18 @@ function WarehousesPage() {
       .reduce((s, m) => s + m.quantity, 0);
 
   const [query, setQuery] = React.useState("");
+  const [sortDir, setSortDir] = React.useState<"asc" | "desc" | null>(null);
+
+  const toggleSort = () => {
+    setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+  };
+
+  const sortedList = React.useMemo(() => {
+    const arr = [...list];
+    if (sortDir === "asc") return arr.sort((a, b) => a.code.localeCompare(b.code));
+    if (sortDir === "desc") return arr.sort((a, b) => b.code.localeCompare(a.code));
+    return arr;
+  }, [list, sortDir]);
   const q = query.trim().toLowerCase();
   const productsInWarehouse = ps
     .map((p) => ({ p, qty: qtyAt(p.id, selectedId) }))
@@ -81,7 +93,15 @@ function WarehousesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
+                <TableHead
+                  className="cursor-pointer select-none"
+                  onClick={toggleSort}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    Code
+                    <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                  </span>
+                </TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Address</TableHead>
                 <TableHead>Default</TableHead>
@@ -89,7 +109,7 @@ function WarehousesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {list.map((w) => (
+              {sortedList.map((w) => (
                 <TableRow key={w.id}>
                   <TableCell className="font-mono text-xs">{w.code}</TableCell>
                   <TableCell className="font-medium">{w.name}</TableCell>
