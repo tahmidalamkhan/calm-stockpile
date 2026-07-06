@@ -55,6 +55,18 @@ function WarehousesPage() {
       .reduce((s, m) => s + m.quantity, 0);
 
   const [query, setQuery] = React.useState("");
+  const [sortDir, setSortDir] = React.useState<"asc" | "desc" | null>(null);
+
+  const toggleSort = () => {
+    setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+  };
+
+  const sortedList = React.useMemo(() => {
+    const arr = [...list];
+    if (sortDir === "asc") return arr.sort((a, b) => a.code.localeCompare(b.code));
+    if (sortDir === "desc") return arr.sort((a, b) => b.code.localeCompare(a.code));
+    return arr;
+  }, [list, sortDir]);
   const q = query.trim().toLowerCase();
   const productsInWarehouse = ps
     .map((p) => ({ p, qty: qtyAt(p.id, selectedId) }))
