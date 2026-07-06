@@ -96,6 +96,15 @@ function WarehousesPage() {
                   <TableCell className="text-muted-foreground">{w.address}</TableCell>
                   <TableCell>{w.isDefault && <Badge>Default</Badge>}</TableCell>
                   <TableCell className="text-right">
+                    {!w.isDefault && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => void setDefaultWarehouse(w.id)}
+                      >
+                        <Star className="mr-1 h-4 w-4" /> Make default
+                      </Button>
+                    )}
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="icon" className="text-destructive">
