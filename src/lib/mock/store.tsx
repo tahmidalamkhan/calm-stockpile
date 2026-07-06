@@ -31,6 +31,7 @@ type CompanyContextValue = {
   ) => Promise<Product | null>;
   addWarehouse: (w: Warehouse) => Promise<void>;
   deleteWarehouse: (id: ID) => Promise<void>;
+  setDefaultWarehouse: (id: ID) => Promise<void>;
   addStockMovement: (m: StockMovement) => Promise<void>;
   addStockMovements: (m: StockMovement[]) => Promise<void>;
   transferStock: (args: {
