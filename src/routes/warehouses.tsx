@@ -12,7 +12,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Download, Trash2 } from "lucide-react";
+import { Download, Trash2, Star } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -35,7 +35,7 @@ export const Route = createFileRoute("/warehouses")({
 });
 
 function WarehousesPage() {
-  const { activeCompanyId, warehouses, products, stockMovements, deleteWarehouse } = useCompany();
+  const { activeCompanyId, warehouses, products, stockMovements, deleteWarehouse, setDefaultWarehouse } = useCompany();
   const list = warehouses.filter((w) => w.companyId === activeCompanyId);
   const ps = products.filter((p) => p.companyId === activeCompanyId);
 
@@ -96,6 +96,15 @@ function WarehousesPage() {
                   <TableCell className="text-muted-foreground">{w.address}</TableCell>
                   <TableCell>{w.isDefault && <Badge>Default</Badge>}</TableCell>
                   <TableCell className="text-right">
+                    {!w.isDefault && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => void setDefaultWarehouse(w.id)}
+                      >
+                        <Star className="mr-1 h-4 w-4" /> Make default
+                      </Button>
+                    )}
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="icon" className="text-destructive">

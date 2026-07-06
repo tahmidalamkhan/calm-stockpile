@@ -31,6 +31,7 @@ type CompanyContextValue = {
   ) => Promise<Product | null>;
   addWarehouse: (w: Warehouse) => Promise<void>;
   deleteWarehouse: (id: ID) => Promise<void>;
+  setDefaultWarehouse: (id: ID) => Promise<void>;
   addStockMovement: (m: StockMovement) => Promise<void>;
   addStockMovements: (m: StockMovement[]) => Promise<void>;
   transferStock: (args: {
@@ -229,6 +230,24 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         .single();
       if (error || !data) { toast.error(`Warehouse: ${error?.message ?? "insert failed"}`); return; }
       setWarehouses((prev) => [mapWarehouse(data), ...prev]);
+    },
+    [activeCompanyId],
+  );
+
+  const setDefaultWarehouse: CompanyContextValue["setDefaultWarehouse"] = React.useCallback(
+    async (id) => {
+      const { error: clearErr } = await supabase
+        .from("warehouses")
+        .update({ is_default: false })
+        .eq("company_id", activeCompanyId);
+      if (clearErr) { toast.error(`Set default: ${clearErr.message}`); return; }
+      const { error } = await supabase
+        .from("warehouses")
+        .update({ is_default: true })
+        .eq("id", id);
+      if (error) { toast.error(`Set default: ${error.message}`); return; }
+      setWarehouses((prev) => prev.map((w) => ({ ...w, isDefault: w.id === id })));
+      toast.success("Default warehouse updated");
     },
     [activeCompanyId],
   );
@@ -440,6 +459,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       addProduct,
       addWarehouse,
       deleteWarehouse,
+      setDefaultWarehouse,
       addStockMovement,
       addStockMovements,
       transferStock,
@@ -458,6 +478,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       addProduct,
       addWarehouse,
       deleteWarehouse,
+      setDefaultWarehouse,
       addStockMovement,
       addStockMovements,
       transferStock,
