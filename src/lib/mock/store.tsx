@@ -233,6 +233,24 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     [activeCompanyId],
   );
 
+  const setDefaultWarehouse: CompanyContextValue["setDefaultWarehouse"] = React.useCallback(
+    async (id) => {
+      const { error: clearErr } = await supabase
+        .from("warehouses")
+        .update({ is_default: false })
+        .eq("company_id", activeCompanyId);
+      if (clearErr) { toast.error(`Set default: ${clearErr.message}`); return; }
+      const { error } = await supabase
+        .from("warehouses")
+        .update({ is_default: true })
+        .eq("id", id);
+      if (error) { toast.error(`Set default: ${error.message}`); return; }
+      setWarehouses((prev) => prev.map((w) => ({ ...w, isDefault: w.id === id })));
+      toast.success("Default warehouse updated");
+    },
+    [activeCompanyId],
+  );
+
   const deleteWarehouse: CompanyContextValue["deleteWarehouse"] = React.useCallback(
     async (id) => {
       const { error: mErr } = await supabase.from("stock_movements").delete().eq("warehouse_id", id);
