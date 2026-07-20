@@ -1,45 +1,30 @@
-## Why the Dashboard item is missing on Vercel
+## Change
 
-In `src/components/app/AppLayout.tsx`, both **Dashboard** and **Users** nav items are gated by `roles: ["admin"]`. The role is loaded by `getMyRole()` (a TanStack server function in `src/lib/auth.functions.ts`) which runs server-side and uses:
+Replace the single **Qty** column in the Stock Control movements table with two columns: **Initial Qty** and **Final Qty**, computed as the running per-warehouse balance before and after each movement.
 
-- `SUPABASE_URL`
-- `SUPABASE_PUBLISHABLE_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY` (used by `supabaseAdmin`)
+## Where
 
-Plus the browser client uses:
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `src/routes/stock.tsx` — movements table only. Dashboard and Excel export are unchanged.
 
-On Vercel these are not auto-injected (only Lovable Cloud injects them). When `getMyRole()` fails, the catch in `use-auth.tsx` sets `role = null` and clears the cached role — so admin-only links disappear, even though login still works (login uses only the browser client, which may have the VITE_ vars baked in at build).
+## How it works
 
-## Fix — Step 1: Add env vars to Vercel
+For every row, compute:
+- `finalQty` = sum of `quantity` for all movements with the same `productId` + `warehouseId`, dated on/before this movement (ordered by date, then insertion order/id), including this one.
+- `initialQty` = `finalQty − thisMovement.quantity`.
 
-In Vercel → Project → Settings → Environment Variables, add (for Production + Preview):
+This gives:
+- Purchase of 100 (new item) → Initial 0, Final 100.
+- No further movement → the row still shows 0 → 100 (it doesn't change over time).
+- Later adjustment of +20 → Initial 100, Final 120.
+- Sale of 5 → Initial 120, Final 115.
+- Transfer legs are handled per warehouse: outgoing leg shows the source warehouse decreasing, incoming leg shows the destination increasing (each row uses its own `warehouseId`).
 
-```
-VITE_SUPABASE_URL              = https://sftddziyozbsmeezscah.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY  = <anon key from .env>
-SUPABASE_URL                   = https://sftddziyozbsmeezscah.supabase.co
-SUPABASE_PUBLISHABLE_KEY       = <same anon key>
-SUPABASE_SERVICE_ROLE_KEY      = <service role key — get from Lovable Cloud → Backend>
-```
+Rendering:
+- Two right-aligned monospace columns replacing today's Qty column.
+- Adjustment rows already carry `fromQty`/`toQty`; we'll use those when present to stay consistent with what the user typed, otherwise fall back to the computed balance.
 
-Then **Redeploy** (a rebuild is required because `VITE_*` vars are bundled at build time).
+## Implementation notes (technical)
 
-## Fix — Step 2: Verify server functions actually run on Vercel
-
-This project ships with `wrangler.jsonc` and is built for **Cloudflare Workers**, not Vercel. TanStack Start needs a Vercel preset to deploy server functions on Vercel. Two options:
-
-- **Recommended:** Deploy on Cloudflare Pages/Workers (matches current config) or just use Lovable's built-in Publish — both already have env vars wired up.
-- **Stay on Vercel:** add the Vercel deployment preset to `vite.config.ts` (TanStack Start `target: 'vercel'`) so server functions are emitted as Vercel Functions. Without this, `getMyRole` returns a 404/HTML and the role load silently fails.
-
-## How to verify after deploying
-
-1. Open the deployed site, log in, open DevTools → Network.
-2. Look for the `getMyRole` request. Expected: `200` with `{ role: "admin" }`. If you see 404 / HTML / 500, it's the deployment preset (Step 2). If you see 500 with a Supabase error, it's the env vars (Step 1).
-3. After a successful response, the Dashboard link appears immediately.
-
-## Notes
-
-- No source code changes are needed — this is purely a deployment configuration issue.
-- The role is cached in `localStorage` under `stockhub.role`, so once it loads once successfully on the Vercel domain, it sticks across reloads.
+- Precompute a `Map<"productId|warehouseId", sortedMovements[]>` once from `ms` (already filtered to the active company), sorted ascending by `date` then `id`, with a cumulative running total per entry. Look up each rendered row's `{initial, final}` from that map by movement id — O(n) build, O(1) per row.
+- Update the `TableHeader` to have `Initial Qty` and `Final Qty` cells (both sortable via the existing `use-table-sort` hook on the computed final value; initial is derived).
+- Remove the current single Qty cell and the special adjustment `X → Y` rendering (the two columns now express the same thing uniformly).
