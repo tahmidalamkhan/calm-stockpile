@@ -305,13 +305,26 @@ function StockHistoryPage() {
                       </TableRow>
                     ))}
                     <TableRow className="border-t-2 font-semibold bg-muted/40">
-                      <TableCell colSpan={7} className="text-right">Total value</TableCell>
-                      <TableCell className="text-right font-mono">
+                      <TableCell colSpan={7} className="text-right">Total buying value</TableCell>
+                      <TableCell className="text-right font-mono text-primary">
                         {formatCurrency(
-                          movements.reduce((s, m) => s + (m.unitCost || 0) * Math.abs(m.quantity), 0),
+                          movements
+                            .filter((m) => m.type === "purchase")
+                            .reduce((s, m) => s + (m.unitCost || 0) * Math.abs(m.quantity), 0),
                         )}
                       </TableCell>
                     </TableRow>
+                    <TableRow className="font-semibold bg-muted/40">
+                      <TableCell colSpan={7} className="text-right">Total selling value</TableCell>
+                      <TableCell className="text-right font-mono text-destructive">
+                        {formatCurrency(
+                          movements
+                            .filter((m) => m.type === "sale")
+                            .reduce((s, m) => s + (m.unitCost || 0) * Math.abs(m.quantity), 0),
+                        )}
+                      </TableCell>
+                    </TableRow>
+
                   </>
                 )}
               </TableBody>
