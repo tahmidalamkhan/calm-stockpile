@@ -63,18 +63,18 @@ export function NewProductDialog() {
     const productId = `p-${Date.now()}`;
     const initial = stockRows
       .filter((r) => r.warehouseId && r.quantity > 0)
-      .map((r) => ({ warehouseId: r.warehouseId, quantity: r.quantity, unitCost: avgCost }));
+      .map((r) => ({ warehouseId: r.warehouseId, quantity: r.quantity, unitCost: price }));
     addProduct(
       {
         id: productId,
         companyId: activeCompanyId,
-        sku, name, category, unit, price, avgCost, reorderLevel,
+        sku, name, category, unit, price, avgCost: price, reorderLevel,
       },
       initial,
     );
     toast.success(`Product ${name} added${initial.length ? ` with opening stock` : ""}`);
     setSku(""); setSkuEdited(false); setName(""); setCategory(""); setUnit("pcs");
-    setPrice(0); setAvgCost(0); setReorderLevel(0);
+    setPrice(0); setReorderLevel(0);
     setStockRows([{ warehouseId: defaultWh, quantity: 0 }]);
     setOpen(false);
   };
