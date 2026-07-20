@@ -309,8 +309,16 @@ function StockHistoryPage() {
                       <TableCell className="text-right font-mono text-primary">
                         {formatCurrency(
                           movements
-                            .filter((m) => m.type === "purchase")
-                            .reduce((s, m) => s + (m.unitCost || 0) * Math.abs(m.quantity), 0),
+                            .filter(
+                              (m) =>
+                                m.type === "purchase" ||
+                                (m.type === "adjustment" && m.quantity > 0),
+                            )
+                            .reduce(
+                              (s, m) =>
+                                s + (m.unitCost || selectedProduct.avgCost || 0) * Math.abs(m.quantity),
+                              0,
+                            ),
                         )}
                       </TableCell>
                     </TableRow>
@@ -320,10 +328,14 @@ function StockHistoryPage() {
                         {formatCurrency(
                           movements
                             .filter((m) => m.type === "sale")
-                            .reduce((s, m) => s + (m.unitCost || 0) * Math.abs(m.quantity), 0),
+                            .reduce(
+                              (s, m) => s + (selectedProduct.price || 0) * Math.abs(m.quantity),
+                              0,
+                            ),
                         )}
                       </TableCell>
                     </TableRow>
+
 
                   </>
                 )}
