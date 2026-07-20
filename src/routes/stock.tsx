@@ -94,7 +94,9 @@ function StockPage() {
   }
 
   const qtyCols = (m: (typeof ms)[number]) => {
-    if (m.type === "adjustment" && m.fromQty !== undefined && m.toQty !== undefined) {
+    // Prefer the from/to snapshot captured at insertion time — it's the source
+    // of truth. Fall back to the computed running balance for legacy rows.
+    if (m.fromQty !== undefined && m.toQty !== undefined) {
       return { initial: m.fromQty, final: m.toQty };
     }
     return balances.get(m.id) ?? { initial: 0, final: 0 };
