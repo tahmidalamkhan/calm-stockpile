@@ -291,18 +291,39 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   const insertMovementsRaw = React.useCallback(
     async (rows: StockMovement[]) => {
       if (!rows.length) return [];
-      const payload = rows.map((m) => ({
-        company_id: activeCompanyId,
-        date: m.date,
-        product_id: m.productId,
-        warehouse_id: m.warehouseId,
-        type: m.type,
-        quantity: m.quantity,
-        unit_cost: m.unitCost ?? 0,
-        reference: m.reference || null,
-        from_qty: m.fromQty ?? null,
-        to_qty: m.toQty ?? null,
-      }));
+      // Snapshot current on-hand per (product, warehouse) from existing movements,
+      // then advance it as we process the batch so from_qty/to_qty stay coherent
+      // even for multi-line submissions (bulk import, transfers, adjustments).
+      const running = new Map<string, number>();
+      for (const m of stockMovements) {
+        const key = `${m.productId}|${m.warehouseId}`;
+        running.set(key, (running.get(key) ?? 0) + m.quantity);
+      }
+      const payload = rows.map((m) => {
+        const key = `${m.productId}|${m.warehouseId}`;
+        const before = running.get(key) ?? 0;
+        // For adjustments the caller supplies absolute from/to counts; trust them.
+        // Otherwise derive from the current snapshot so integrity holds.
+        let from = before;
+        let to = before + m.quantity;
+        if (m.type === "adjustment" && m.fromQty !== undefined && m.toQty !== undefined) {
+          from = m.fromQty;
+          to = m.toQty;
+        }
+        running.set(key, to);
+        return {
+          company_id: activeCompanyId,
+          date: m.date,
+          product_id: m.productId,
+          warehouse_id: m.warehouseId,
+          type: m.type,
+          quantity: m.quantity,
+          unit_cost: m.unitCost ?? 0,
+          reference: m.reference || null,
+          from_qty: from,
+          to_qty: to,
+        };
+      });
       const { data, error } = await supabase
         .from("stock_movements")
         .insert(payload)
@@ -312,7 +333,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       setStockMovements((prev) => [...mapped, ...prev]);
       return mapped;
     },
-    [activeCompanyId],
+    [activeCompanyId, stockMovements],
   );
 
   const addStockMovement: CompanyContextValue["addStockMovement"] = React.useCallback(
