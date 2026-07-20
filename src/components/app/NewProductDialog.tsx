@@ -137,7 +137,7 @@ export function NewProductDialog() {
             ))}
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Opening quantities are valued at the avg cost above.
+            Opening quantities are valued at the price above.
           </p>
         </div>
 
