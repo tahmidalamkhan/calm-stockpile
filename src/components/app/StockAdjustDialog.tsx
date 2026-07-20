@@ -43,11 +43,15 @@ export function StockAdjustDialog({ direction }: { direction: Direction }) {
   const [open, setOpen] = React.useState(false);
   const [date, setDate] = React.useState(new Date().toISOString().slice(0, 10));
   const [lines, setLines] = React.useState<Line[]>([newLine()]);
+  const [submitting, setSubmitting] = React.useState(false);
+  const submittingRef = React.useRef(false);
 
   React.useEffect(() => {
     if (open) {
       setLines([newLine()]);
       setDate(new Date().toISOString().slice(0, 10));
+      setSubmitting(false);
+      submittingRef.current = false;
     }
   }, [open]);
 
@@ -61,7 +65,8 @@ export function StockAdjustDialog({ direction }: { direction: Direction }) {
   const remove = (id: string) =>
     setLines((cur) => (cur.length > 1 ? cur.filter((l) => l.id !== id) : cur));
 
-  const submit = () => {
+  const submit = async () => {
+    if (submittingRef.current) return;
     const valid = lines.filter((l) => l.productId && l.warehouseId && l.quantity > 0);
     if (!valid.length) return toast.error("Add at least one line");
     if (!isIn) {
@@ -74,6 +79,8 @@ export function StockAdjustDialog({ direction }: { direction: Direction }) {
         }
       }
     }
+    submittingRef.current = true;
+    setSubmitting(true);
     const ref = `${isIn ? "IN" : "OUT"}-${Date.now().toString().slice(-6)}`;
     const ts = Date.now();
     const movements: StockMovement[] = valid.map((l, idx) => ({
@@ -87,9 +94,14 @@ export function StockAdjustDialog({ direction }: { direction: Direction }) {
       unitCost: l.unitCost,
       reference: ref,
     }));
-    addStockMovements(movements);
-    toast.success(`Stock ${isIn ? "in" : "out"}: ${valid.length} line(s)`);
-    setOpen(false);
+    try {
+      await addStockMovements(movements);
+      toast.success(`Stock ${isIn ? "in" : "out"}: ${valid.length} line(s)`);
+      setOpen(false);
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -181,8 +193,10 @@ export function StockAdjustDialog({ direction }: { direction: Direction }) {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={submit}>{isIn ? "Stock in" : "Stock out"}</Button>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={submitting}>Cancel</Button>
+          <Button onClick={submit} disabled={submitting}>
+            {submitting ? "Saving..." : isIn ? "Stock in" : "Stock out"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
