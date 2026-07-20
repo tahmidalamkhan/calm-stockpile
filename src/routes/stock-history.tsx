@@ -329,12 +329,14 @@ function StockHistoryPage() {
                           movements
                             .filter((m) => m.type === "sale")
                             .reduce(
-                              (s, m) => s + (selectedProduct.price || 0) * Math.abs(m.quantity),
+                              (s, m) =>
+                                s + (m.unitCost || selectedProduct.price || 0) * Math.abs(m.quantity),
                               0,
                             ),
                         )}
                       </TableCell>
                     </TableRow>
+
 
 
                   </>
