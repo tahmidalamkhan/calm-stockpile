@@ -83,17 +83,27 @@ export function StockAdjustDialog({ direction }: { direction: Direction }) {
     setSubmitting(true);
     const ref = `${isIn ? "IN" : "OUT"}-${Date.now().toString().slice(-6)}`;
     const ts = Date.now();
-    const movements: StockMovement[] = valid.map((l, idx) => ({
-      id: `sm-${isIn ? "in" : "out"}-${ts}-${idx}`,
-      companyId: activeCompanyId,
-      date,
-      productId: l.productId,
-      warehouseId: l.warehouseId,
-      type: isIn ? "purchase" : "sale",
-      quantity: isIn ? l.quantity : -l.quantity,
-      unitCost: l.unitCost,
-      reference: ref,
-    }));
+    const running = new Map<string, number>();
+    const movements: StockMovement[] = valid.map((l, idx) => {
+      const key = `${l.productId}|${l.warehouseId}`;
+      const from = running.get(key) ?? qtyAt(l.productId, l.warehouseId);
+      const delta = isIn ? l.quantity : -l.quantity;
+      const to = from + delta;
+      running.set(key, to);
+      return {
+        id: `sm-${isIn ? "in" : "out"}-${ts}-${idx}`,
+        companyId: activeCompanyId,
+        date,
+        productId: l.productId,
+        warehouseId: l.warehouseId,
+        type: isIn ? "purchase" : "sale",
+        quantity: delta,
+        unitCost: l.unitCost,
+        reference: ref,
+        fromQty: from,
+        toQty: to,
+      };
+    });
     try {
       await addStockMovements(movements);
       toast.success(`Stock ${isIn ? "in" : "out"}: ${valid.length} line(s)`);
