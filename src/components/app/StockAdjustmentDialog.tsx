@@ -38,11 +38,15 @@ export function StockAdjustmentDialog() {
   const [warehouseId, setWarehouseId] = React.useState<string>(ws[0]?.id ?? "");
   const [date, setDate] = React.useState(new Date().toISOString().slice(0, 10));
   const [lines, setLines] = React.useState<Line[]>([newLine()]);
+  const [submitting, setSubmitting] = React.useState(false);
+  const submittingRef = React.useRef(false);
 
   React.useEffect(() => {
     if (open) {
       setLines([newLine()]);
       setDate(new Date().toISOString().slice(0, 10));
+      setSubmitting(false);
+      submittingRef.current = false;
       if (!warehouseId && ws[0]) setWarehouseId(ws[0].id);
     }
   }, [open]);
@@ -57,7 +61,8 @@ export function StockAdjustmentDialog() {
   const remove = (id: string) =>
     setLines((cur) => (cur.length > 1 ? cur.filter((l) => l.id !== id) : cur));
 
-  const submit = () => {
+  const submit = async () => {
+    if (submittingRef.current) return;
     if (!warehouseId) return toast.error("Pick a warehouse");
     const valid = lines.filter((l) => l.productId);
     if (!valid.length) return toast.error("Add at least one line");
@@ -85,9 +90,16 @@ export function StockAdjustmentDialog() {
       });
     }
     if (!movements.length) return toast.error("No changes to apply");
-    addStockMovements(movements);
-    toast.success(`Adjusted ${movements.length} line(s)`);
-    setOpen(false);
+    submittingRef.current = true;
+    setSubmitting(true);
+    try {
+      await addStockMovements(movements);
+      toast.success(`Adjusted ${movements.length} line(s)`);
+      setOpen(false);
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
   };
 
   return (
