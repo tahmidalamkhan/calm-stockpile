@@ -41,6 +41,7 @@ export type StockMovementType = "purchase" | "sale" | "adjustment" | "transfer";
 export type StockMovement = {
   id: ID;
   companyId: ID;
+  createdAt?: string;
   date: string;
   productId: ID;
   warehouseId: ID;

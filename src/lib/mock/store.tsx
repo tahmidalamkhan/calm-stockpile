@@ -99,9 +99,11 @@ function mapSupplier(r: Record<string, unknown>): Supplier {
 }
 function mapMovement(r: Record<string, unknown>): StockMovement {
   const d = r.date as string;
+  const createdAt = r.created_at as string | undefined;
   return {
     id: r.id as string,
     companyId: r.company_id as string,
+    createdAt,
     date: typeof d === "string" ? d.slice(0, 10) : new Date(d).toISOString().slice(0, 10),
     productId: r.product_id as string,
     warehouseId: r.warehouse_id as string,
@@ -112,6 +114,44 @@ function mapMovement(r: Record<string, unknown>): StockMovement {
     fromQty: r.from_qty == null ? undefined : Number(r.from_qty),
     toQty: r.to_qty == null ? undefined : Number(r.to_qty),
   };
+}
+
+function stockMovementSnapshots(movements: StockMovement[]) {
+  const snapshots = new Map<string, { initial: number; final: number }>();
+  const groups = new Map<string, StockMovement[]>();
+
+  for (const movement of movements) {
+    const key = `${movement.productId}|${movement.warehouseId}`;
+    const group = groups.get(key) ?? [];
+    group.push(movement);
+    groups.set(key, group);
+  }
+
+  for (const group of groups.values()) {
+    group.sort((a, b) => {
+      if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+      const aCreated = a.createdAt ?? "";
+      const bCreated = b.createdAt ?? "";
+      if (aCreated !== bCreated) return aCreated < bCreated ? -1 : 1;
+      return a.id.localeCompare(b.id);
+    });
+
+    let running = 0;
+    for (const movement of group) {
+      if (typeof movement.fromQty === "number" && typeof movement.toQty === "number") {
+        snapshots.set(movement.id, { initial: movement.fromQty, final: movement.toQty });
+        running = movement.toQty;
+        continue;
+      }
+
+      const initial = running;
+      const final = initial + movement.quantity;
+      snapshots.set(movement.id, { initial, final });
+      running = final;
+    }
+  }
+
+  return snapshots;
 }
 
 export function CompanyProvider({ children }: { children: React.ReactNode }) {
@@ -196,9 +236,35 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       .select("*")
       .eq("company_id", companyId)
       .order("date", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(1000);
     if (error) return toast.error(`Stock movements: ${error.message}`);
-    setStockMovements((data ?? []).map(mapMovement));
+    const mapped = (data ?? []).map(mapMovement);
+    const snapshots = stockMovementSnapshots(mapped);
+    const missingSnapshotRows: StockMovement[] = [];
+    const hydrated = mapped.map((movement) => {
+      if (typeof movement.fromQty === "number" && typeof movement.toQty === "number") {
+        return movement;
+      }
+      const snapshot = snapshots.get(movement.id);
+      if (!snapshot) return movement;
+      const next = { ...movement, fromQty: snapshot.initial, toQty: snapshot.final };
+      missingSnapshotRows.push(next);
+      return next;
+    });
+
+    setStockMovements(hydrated);
+
+    if (missingSnapshotRows.length) {
+      void Promise.all(
+        missingSnapshotRows.map((movement) =>
+          supabase
+            .from("stock_movements")
+            .update({ from_qty: movement.fromQty ?? 0, to_qty: movement.toQty ?? movement.quantity })
+            .eq("id", movement.id),
+        ),
+      );
+    }
   }, []);
 
   // Load all data scoped to active company.
@@ -302,11 +368,12 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       const payload = rows.map((m) => {
         const key = `${m.productId}|${m.warehouseId}`;
         const before = running.get(key) ?? 0;
-        // For adjustments the caller supplies absolute from/to counts; trust them.
+        // When the caller supplies before/after counts, trust them for every
+        // movement type. They are a permanent historical snapshot.
         // Otherwise derive from the current snapshot so integrity holds.
         let from = before;
         let to = before + m.quantity;
-        if (m.type === "adjustment" && m.fromQty !== undefined && m.toQty !== undefined) {
+        if (typeof m.fromQty === "number" && typeof m.toQty === "number") {
           from = m.fromQty;
           to = m.toQty;
         }

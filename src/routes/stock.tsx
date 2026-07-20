@@ -62,13 +62,10 @@ function StockPage() {
     (m) => !(m.type === "transfer" && m.quantity < 0),
   );
 
-  // Running per-(product, warehouse) balance keyed by movement id.
-  // Movements from the store already arrive in chronological (created_at ASC)
-  // order, so use array index as a stable tiebreaker when dates collide
-  // (dates are YYYY-MM-DD with no time component).
+  // Legacy fallback only. Normal rows use saved from_qty/to_qty snapshots so
+  // historical Initial/Final quantities never move when new rows are inserted.
   const balances = new Map<string, { initial: number; final: number }>();
   {
-    const order = new Map(ms.map((m, i) => [m.id, i]));
     const groups = new Map<string, typeof ms>();
     for (const m of ms) {
       const key = `${m.productId}|${m.warehouseId}`;
@@ -77,18 +74,24 @@ function StockPage() {
       groups.set(key, arr);
     }
     for (const arr of groups.values()) {
-      arr.sort((a, b) =>
-        a.date === b.date
-          ? (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0)
-          : a.date < b.date
-            ? -1
-            : 1,
-      );
+      arr.sort((a, b) => {
+        if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+        const aCreated = a.createdAt ?? "";
+        const bCreated = b.createdAt ?? "";
+        if (aCreated !== bCreated) return aCreated < bCreated ? -1 : 1;
+        return a.id.localeCompare(b.id);
+      });
       let running = 0;
       for (const m of arr) {
+        if (typeof m.fromQty === "number" && typeof m.toQty === "number") {
+          balances.set(m.id, { initial: m.fromQty, final: m.toQty });
+          running = m.toQty;
+          continue;
+        }
         const initial = running;
-        running += m.quantity;
-        balances.set(m.id, { initial, final: running });
+        const final = initial + m.quantity;
+        balances.set(m.id, { initial, final });
+        running = final;
       }
     }
   }
@@ -96,7 +99,7 @@ function StockPage() {
   const qtyCols = (m: (typeof ms)[number]) => {
     // Prefer the from/to snapshot captured at insertion time — it's the source
     // of truth. Fall back to the computed running balance for legacy rows.
-    if (m.fromQty !== undefined && m.toQty !== undefined) {
+    if (typeof m.fromQty === "number" && typeof m.toQty === "number") {
       return { initial: m.fromQty, final: m.toQty };
     }
     return balances.get(m.id) ?? { initial: 0, final: 0 };
