@@ -93,7 +93,6 @@ export function NewProductDialog() {
           <div className="grid gap-1.5"><Label>Unit</Label><Input value={unit} placeholder="e.g. pcs, kg, box" onChange={(e) => setUnit(e.target.value)} /></div>
           <div className="grid gap-1.5"><Label>Quantity</Label><Input type="number" min={0} placeholder="Opening qty" value={stockRows[0]?.quantity || ""} onChange={(e) => updateRow(0, { quantity: Math.max(0, Number(e.target.value)) })} /></div>
           <div className="grid gap-1.5"><Label>Price</Label><Input type="number" min={0} step="0.01" value={price || ""} onChange={(e) => setPrice(Number(e.target.value))} /></div>
-          <div className="grid gap-1.5"><Label>Price</Label><Input type="number" min={0} step="0.01" value={price || ""} onChange={(e) => setPrice(Number(e.target.value))} /></div>
           <div className="grid gap-1.5"><Label>Reorder level</Label><Input type="number" min={0} value={reorderLevel || ""} onChange={(e) => setReorderLevel(Number(e.target.value))} /></div>
         </div>
 
