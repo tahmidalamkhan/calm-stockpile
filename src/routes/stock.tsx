@@ -63,8 +63,12 @@ function StockPage() {
   );
 
   // Running per-(product, warehouse) balance keyed by movement id.
+  // Movements from the store already arrive in chronological (created_at ASC)
+  // order, so use array index as a stable tiebreaker when dates collide
+  // (dates are YYYY-MM-DD with no time component).
   const balances = new Map<string, { initial: number; final: number }>();
   {
+    const order = new Map(ms.map((m, i) => [m.id, i]));
     const groups = new Map<string, typeof ms>();
     for (const m of ms) {
       const key = `${m.productId}|${m.warehouseId}`;
@@ -73,7 +77,13 @@ function StockPage() {
       groups.set(key, arr);
     }
     for (const arr of groups.values()) {
-      arr.sort((a, b) => (a.date === b.date ? (a.id < b.id ? -1 : 1) : a.date < b.date ? -1 : 1));
+      arr.sort((a, b) =>
+        a.date === b.date
+          ? (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0)
+          : a.date < b.date
+            ? -1
+            : 1,
+      );
       let running = 0;
       for (const m of arr) {
         const initial = running;
@@ -82,6 +92,7 @@ function StockPage() {
       }
     }
   }
+
   const qtyCols = (m: (typeof ms)[number]) => {
     if (m.type === "adjustment" && m.fromQty !== undefined && m.toQty !== undefined) {
       return { initial: m.fromQty, final: m.toQty };
