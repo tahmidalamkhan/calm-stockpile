@@ -198,29 +198,30 @@ function StockPage() {
                 <TableHead>Product</TableHead>
                 <TableHead>Warehouse</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead className="text-right">Qty</TableHead>
+                <TableHead className="text-right">Initial Qty</TableHead>
+                <TableHead className="text-right">Final Qty</TableHead>
                 <TableHead className="text-right">Unit cost</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {visibleMovements.map((m) => (
-                <TableRow key={m.id}>
-                  <TableCell>{formatDate(m.date)}</TableCell>
-                  <TableCell className="font-mono text-xs">{m.reference}</TableCell>
-                  <TableCell>{ps.find((p) => p.id === m.productId)?.name}</TableCell>
-                  <TableCell>{warehouseLabel(m)}</TableCell>
-                  <TableCell>
-                    <Badge variant={m.quantity >= 0 ? "default" : "secondary"}>{m.type}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-mono">
-                    {m.type === "adjustment" && m.fromQty !== undefined && m.toQty !== undefined
-                      ? `${m.fromQty} → ${m.toQty}`
-                      : Math.abs(m.quantity)}
-                  </TableCell>
-                  <TableCell className="text-right font-mono">{formatCurrency(m.unitCost)}</TableCell>
+              {visibleMovements.map((m) => {
+                const { initial, final } = qtyCols(m);
+                return (
+                  <TableRow key={m.id}>
+                    <TableCell>{formatDate(m.date)}</TableCell>
+                    <TableCell className="font-mono text-xs">{m.reference}</TableCell>
+                    <TableCell>{ps.find((p) => p.id === m.productId)?.name}</TableCell>
+                    <TableCell>{warehouseLabel(m)}</TableCell>
+                    <TableCell>
+                      <Badge variant={m.quantity >= 0 ? "default" : "secondary"}>{m.type}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono">{initial}</TableCell>
+                    <TableCell className="text-right font-mono">{final}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(m.unitCost)}</TableCell>
+                  </TableRow>
+                );
+              })}
 
-                </TableRow>
-              ))}
             </TableBody>
           </Table>
         </CardContent>
