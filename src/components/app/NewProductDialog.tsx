@@ -27,7 +27,6 @@ export function NewProductDialog() {
   const [category, setCategory] = React.useState("");
   const [unit, setUnit] = React.useState("pcs");
   const [price, setPrice] = React.useState(0);
-  const [avgCost, setAvgCost] = React.useState(0);
   const [reorderLevel, setReorderLevel] = React.useState(0);
   const [stockRows, setStockRows] = React.useState<StockRow[]>([
     { warehouseId: defaultWh, quantity: 0 },
@@ -64,18 +63,18 @@ export function NewProductDialog() {
     const productId = `p-${Date.now()}`;
     const initial = stockRows
       .filter((r) => r.warehouseId && r.quantity > 0)
-      .map((r) => ({ warehouseId: r.warehouseId, quantity: r.quantity, unitCost: avgCost }));
+      .map((r) => ({ warehouseId: r.warehouseId, quantity: r.quantity, unitCost: price }));
     addProduct(
       {
         id: productId,
         companyId: activeCompanyId,
-        sku, name, category, unit, price, avgCost, reorderLevel,
+        sku, name, category, unit, price, avgCost: price, reorderLevel,
       },
       initial,
     );
     toast.success(`Product ${name} added${initial.length ? ` with opening stock` : ""}`);
     setSku(""); setSkuEdited(false); setName(""); setCategory(""); setUnit("pcs");
-    setPrice(0); setAvgCost(0); setReorderLevel(0);
+    setPrice(0); setReorderLevel(0);
     setStockRows([{ warehouseId: defaultWh, quantity: 0 }]);
     setOpen(false);
   };
@@ -93,7 +92,6 @@ export function NewProductDialog() {
           <div className="grid gap-1.5"><Label>Category</Label><Input value={category} onChange={(e) => setCategory(e.target.value)} /></div>
           <div className="grid gap-1.5"><Label>Unit</Label><Input value={unit} placeholder="e.g. pcs, kg, box" onChange={(e) => setUnit(e.target.value)} /></div>
           <div className="grid gap-1.5"><Label>Quantity</Label><Input type="number" min={0} placeholder="Opening qty" value={stockRows[0]?.quantity || ""} onChange={(e) => updateRow(0, { quantity: Math.max(0, Number(e.target.value)) })} /></div>
-          <div className="grid gap-1.5"><Label>Avg cost</Label><Input type="number" min={0} step="0.01" value={avgCost || ""} onChange={(e) => setAvgCost(Number(e.target.value))} /></div>
           <div className="grid gap-1.5"><Label>Price</Label><Input type="number" min={0} step="0.01" value={price || ""} onChange={(e) => setPrice(Number(e.target.value))} /></div>
           <div className="grid gap-1.5"><Label>Reorder level</Label><Input type="number" min={0} value={reorderLevel || ""} onChange={(e) => setReorderLevel(Number(e.target.value))} /></div>
         </div>
@@ -139,7 +137,7 @@ export function NewProductDialog() {
             ))}
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Opening quantities are valued at the avg cost above.
+            Opening quantities are valued at the price above.
           </p>
         </div>
 
