@@ -62,6 +62,34 @@ function StockPage() {
     (m) => !(m.type === "transfer" && m.quantity < 0),
   );
 
+  // Running per-(product, warehouse) balance keyed by movement id.
+  const balances = new Map<string, { initial: number; final: number }>();
+  {
+    const groups = new Map<string, typeof ms>();
+    for (const m of ms) {
+      const key = `${m.productId}|${m.warehouseId}`;
+      const arr = groups.get(key) ?? [];
+      arr.push(m);
+      groups.set(key, arr);
+    }
+    for (const arr of groups.values()) {
+      arr.sort((a, b) => (a.date === b.date ? (a.id < b.id ? -1 : 1) : a.date < b.date ? -1 : 1));
+      let running = 0;
+      for (const m of arr) {
+        const initial = running;
+        running += m.quantity;
+        balances.set(m.id, { initial, final: running });
+      }
+    }
+  }
+  const qtyCols = (m: (typeof ms)[number]) => {
+    if (m.type === "adjustment" && m.fromQty !== undefined && m.toQty !== undefined) {
+      return { initial: m.fromQty, final: m.toQty };
+    }
+    return balances.get(m.id) ?? { initial: 0, final: 0 };
+  };
+
+
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const filteredForExport = visibleMovements.filter((m) => {
@@ -170,29 +198,30 @@ function StockPage() {
                 <TableHead>Product</TableHead>
                 <TableHead>Warehouse</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead className="text-right">Qty</TableHead>
+                <TableHead className="text-right">Initial Qty</TableHead>
+                <TableHead className="text-right">Final Qty</TableHead>
                 <TableHead className="text-right">Unit cost</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {visibleMovements.map((m) => (
-                <TableRow key={m.id}>
-                  <TableCell>{formatDate(m.date)}</TableCell>
-                  <TableCell className="font-mono text-xs">{m.reference}</TableCell>
-                  <TableCell>{ps.find((p) => p.id === m.productId)?.name}</TableCell>
-                  <TableCell>{warehouseLabel(m)}</TableCell>
-                  <TableCell>
-                    <Badge variant={m.quantity >= 0 ? "default" : "secondary"}>{m.type}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-mono">
-                    {m.type === "adjustment" && m.fromQty !== undefined && m.toQty !== undefined
-                      ? `${m.fromQty} → ${m.toQty}`
-                      : Math.abs(m.quantity)}
-                  </TableCell>
-                  <TableCell className="text-right font-mono">{formatCurrency(m.unitCost)}</TableCell>
+              {visibleMovements.map((m) => {
+                const { initial, final } = qtyCols(m);
+                return (
+                  <TableRow key={m.id}>
+                    <TableCell>{formatDate(m.date)}</TableCell>
+                    <TableCell className="font-mono text-xs">{m.reference}</TableCell>
+                    <TableCell>{ps.find((p) => p.id === m.productId)?.name}</TableCell>
+                    <TableCell>{warehouseLabel(m)}</TableCell>
+                    <TableCell>
+                      <Badge variant={m.quantity >= 0 ? "default" : "secondary"}>{m.type}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono">{initial}</TableCell>
+                    <TableCell className="text-right font-mono">{final}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(m.unitCost)}</TableCell>
+                  </TableRow>
+                );
+              })}
 
-                </TableRow>
-              ))}
             </TableBody>
           </Table>
         </CardContent>
