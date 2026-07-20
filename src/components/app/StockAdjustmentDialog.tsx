@@ -186,8 +186,10 @@ export function StockAdjustmentDialog() {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={submit}>Apply adjustment</Button>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={submitting}>Cancel</Button>
+          <Button onClick={submit} disabled={submitting}>
+            {submitting ? "Saving..." : "Apply adjustment"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
