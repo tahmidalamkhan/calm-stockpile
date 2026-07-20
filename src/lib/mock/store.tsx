@@ -236,6 +236,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       .select("*")
       .eq("company_id", companyId)
       .order("date", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(1000);
     if (error) return toast.error(`Stock movements: ${error.message}`);
     const mapped = (data ?? []).map(mapMovement);
