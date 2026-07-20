@@ -278,33 +278,44 @@ function StockHistoryPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  movements.map((m) => (
-                    <TableRow key={m.id}>
-                      <TableCell>{formatDate(m.date)}</TableCell>
-                      <TableCell>
-                        <Badge variant={typeVariant[m.type] ?? "outline"} className="capitalize">
-                          {m.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">{m.reference}</TableCell>
-                      <TableCell>{partyFor(m)}</TableCell>
-                      <TableCell>{warehouseName(m.warehouseId)}</TableCell>
-                      <TableCell
-                        className={`text-right font-mono ${m.quantity > 0 ? "text-primary" : "text-destructive"}`}
-                      >
-                        {m.quantity > 0 ? "+" : ""}
-                        {formatNumber(m.quantity)}
-                      </TableCell>
+                  <>
+                    {movements.map((m) => (
+                      <TableRow key={m.id}>
+                        <TableCell>{formatDate(m.date)}</TableCell>
+                        <TableCell>
+                          <Badge variant={typeVariant[m.type] ?? "outline"} className="capitalize">
+                            {m.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">{m.reference}</TableCell>
+                        <TableCell>{partyFor(m)}</TableCell>
+                        <TableCell>{warehouseName(m.warehouseId)}</TableCell>
+                        <TableCell
+                          className={`text-right font-mono ${m.quantity > 0 ? "text-primary" : "text-destructive"}`}
+                        >
+                          {m.quantity > 0 ? "+" : ""}
+                          {formatNumber(m.quantity)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {m.unitCost ? formatCurrency(m.unitCost) : "—"}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {m.unitCost ? formatCurrency(m.unitCost * Math.abs(m.quantity)) : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className="border-t-2 font-semibold bg-muted/40">
+                      <TableCell colSpan={7} className="text-right">Total value</TableCell>
                       <TableCell className="text-right font-mono">
-                        {m.unitCost ? formatCurrency(m.unitCost) : "—"}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {m.unitCost ? formatCurrency(m.unitCost * Math.abs(m.quantity)) : "—"}
+                        {formatCurrency(
+                          movements.reduce((s, m) => s + (m.unitCost || 0) * Math.abs(m.quantity), 0),
+                        )}
                       </TableCell>
                     </TableRow>
-                  ))
+                  </>
                 )}
               </TableBody>
+
             </Table>
           </CardContent>
         </Card>
