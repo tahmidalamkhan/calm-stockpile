@@ -168,18 +168,20 @@ function StockPage() {
               size="sm"
               disabled={filteredForExport.length === 0}
               onClick={() => {
-                const rows = filteredForExport.map((m) => ({
-                  Date: m.date,
-                  Reference: m.reference,
-                  Product: ps.find((p) => p.id === m.productId)?.name ?? m.productId,
-                  Warehouse: warehouseLabel(m),
-                  Type: m.type,
-                  Quantity:
-                    m.type === "adjustment" && m.fromQty !== undefined && m.toQty !== undefined
-                      ? `${m.fromQty} → ${m.toQty}`
-                      : Math.abs(m.quantity),
-                  "Unit cost": m.unitCost,
-                }));
+                const rows = filteredForExport.map((m) => {
+                  const { initial, final } = qtyCols(m);
+                  return {
+                    Date: m.date,
+                    Reference: m.reference,
+                    Product: ps.find((p) => p.id === m.productId)?.name ?? m.productId,
+                    Warehouse: warehouseLabel(m),
+                    Type: m.type,
+                    "Initial Qty": initial,
+                    "Final Qty": final,
+                    "Unit cost": m.unitCost,
+                  };
+                });
+
                 const suffix = fromDate || toDate ? `_${fromDate || "all"}_to_${toDate || "all"}` : "";
                 exportRowsToXlsx(rows, `stock-movements${suffix}.xlsx`, "Movements");
               }}
