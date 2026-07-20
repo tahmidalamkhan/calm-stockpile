@@ -27,7 +27,6 @@ export function NewProductDialog() {
   const [category, setCategory] = React.useState("");
   const [unit, setUnit] = React.useState("pcs");
   const [price, setPrice] = React.useState(0);
-  const [avgCost, setAvgCost] = React.useState(0);
   const [reorderLevel, setReorderLevel] = React.useState(0);
   const [stockRows, setStockRows] = React.useState<StockRow[]>([
     { warehouseId: defaultWh, quantity: 0 },
