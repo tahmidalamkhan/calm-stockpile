@@ -112,7 +112,6 @@ function ProductsPage() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(p.avgCost)}</TableCell>
                     <TableCell className="text-right font-mono">{formatCurrency(p.price)}</TableCell>
                     <TableCell className="text-right">
                       {low ? (
