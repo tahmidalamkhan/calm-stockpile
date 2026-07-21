@@ -82,7 +82,7 @@ function ProductsPage() {
                 <TableHead>Category</TableHead>
                 <TableHead>Unit</TableHead>
                 <TableHead>Warehouses</TableHead>
-                <TableHead className="text-right">Price</TableHead>
+                <TableHead className="text-right">Unit price</TableHead>
                 <TableHead className="text-right">On hand</TableHead>
                 <TableHead className="text-right">Reorder</TableHead>
                 <TableHead className="w-12"></TableHead>
