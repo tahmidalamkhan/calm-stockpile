@@ -82,7 +82,6 @@ function ProductsPage() {
                 <TableHead>Category</TableHead>
                 <TableHead>Unit</TableHead>
                 <TableHead>Warehouses</TableHead>
-                <TableHead className="text-right">Avg cost</TableHead>
                 <TableHead className="text-right">Price</TableHead>
                 <TableHead className="text-right">On hand</TableHead>
                 <TableHead className="text-right">Reorder</TableHead>
@@ -113,7 +112,6 @@ function ProductsPage() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(p.avgCost)}</TableCell>
                     <TableCell className="text-right font-mono">{formatCurrency(p.price)}</TableCell>
                     <TableCell className="text-right">
                       {low ? (
