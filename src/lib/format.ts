@@ -1,7 +1,7 @@
-export function formatCurrency(amount: number, currency = "BDT") {
-  return new Intl.NumberFormat("en-BD", {
-    style: "currency",
-    currency,
+export function formatCurrency(amount: number, _currency = "BDT") {
+  return new Intl.NumberFormat("en-US", {
+    style: "decimal",
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
 }
