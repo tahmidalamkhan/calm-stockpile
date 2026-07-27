@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/custom-client";
+import { requestAccess } from "@/lib/access";
 
 export function LoginPage() {
   const { signIn } = useAuth();
