@@ -12,6 +12,7 @@ import appCss from "../styles.css?url";
 import { CompanyProvider } from "@/lib/mock/store";
 import { AppLayout } from "@/components/app/AppLayout";
 import { LoginPage } from "@/components/app/LoginPage";
+import { PendingApprovalPage } from "@/components/app/PendingApprovalPage";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -107,7 +108,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function AuthedShell() {
-  const { loading, session } = useAuth();
+  const { loading, session, role, access } = useAuth();
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
@@ -116,6 +117,7 @@ function AuthedShell() {
     );
   }
   if (!session) return <LoginPage />;
+  if (!role && access && access !== "approved") return <PendingApprovalPage />;
   return (
     <CompanyProvider>
       <AppLayout>

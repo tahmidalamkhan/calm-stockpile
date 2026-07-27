@@ -1,6 +1,7 @@
 import * as React from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/custom-client";
+import { getMyAccessStatus, type AccessStatus } from "@/lib/access";
 
 export type Role = "admin" | "staff";
 
@@ -9,6 +10,8 @@ type AuthValue = {
   session: Session | null;
   user: User | null;
   role: Role | null;
+  /** Approval state for the signed-in account. */
+  access: AccessStatus | null;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshRole: () => Promise<void>;
@@ -17,6 +20,7 @@ type AuthValue = {
 const AuthCtx = React.createContext<AuthValue | null>(null);
 
 const ROLE_KEY = "stockhub.role";
+const ACCESS_KEY = "stockhub.access";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = React.useState<Session | null>(null);
@@ -24,6 +28,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return null;
     const cached = window.localStorage.getItem(ROLE_KEY);
     return cached === "admin" || cached === "staff" ? cached : null;
+  });
+  const [access, setAccess] = React.useState<AccessStatus | null>(() => {
+    if (typeof window === "undefined") return null;
+    const cached = window.localStorage.getItem(ACCESS_KEY);
+    return cached === "approved" || cached === "pending" || cached === "rejected"
+      ? (cached as AccessStatus)
+      : null;
   });
   const [loading, setLoading] = React.useState(true);
 
@@ -37,12 +48,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq("user_id", userData.user.id);
       if (error) throw error;
       const roles = (data ?? []).map((r) => r.role as Role);
+
+      if (roles.length === 0) {
+        // No role granted yet — the account still needs admin approval.
+        const status = await getMyAccessStatus(userData.user.id);
+        const resolved: AccessStatus = status === "rejected" ? "rejected" : "pending";
+        setRole(null);
+        setAccess(resolved);
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem(ROLE_KEY);
+          window.localStorage.setItem(ACCESS_KEY, resolved);
+        }
+        return;
+      }
+
       const resolved: Role = roles.includes("admin") ? "admin" : "staff";
       setRole(resolved);
-      if (typeof window !== "undefined") window.localStorage.setItem(ROLE_KEY, resolved);
+      setAccess("approved");
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(ROLE_KEY, resolved);
+        window.localStorage.setItem(ACCESS_KEY, "approved");
+      }
     } catch {
       setRole(null);
-      if (typeof window !== "undefined") window.localStorage.removeItem(ROLE_KEY);
+      setAccess(null);
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(ROLE_KEY);
+        window.localStorage.removeItem(ACCESS_KEY);
+      }
     }
   }, []);
 
@@ -52,7 +85,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       if (!s) {
         setRole(null);
-        if (typeof window !== "undefined") window.localStorage.removeItem(ROLE_KEY);
+        setAccess(null);
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem(ROLE_KEY);
+          window.localStorage.removeItem(ACCESS_KEY);
+        }
       } else if (event === "SIGNED_IN") {
         void loadRole();
       }
@@ -72,6 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     session,
     user: session?.user ?? null,
     role,
+    access,
     signIn: async (email, password) => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
