@@ -27,13 +27,28 @@ export function LoginPage() {
         });
         if (error) throw error;
 
-        // Try to claim the first admin role. Safe-by-design: if any admin
-        // already exists, this insert will be blocked by RLS / unique
-        // constraints. On a fresh DB it succeeds and the new user is admin.
         if (data.user) {
-          await supabase
+          // Try to claim the first admin role. Safe-by-design: if any admin
+          // already exists, this insert is blocked by RLS / unique
+          // constraints. On a fresh DB it succeeds and the new user is admin.
+          const { error: roleErr } = await supabase
             .from("user_roles")
             .insert({ user_id: data.user.id, role: "admin" });
+
+          // Everyone else needs explicit admin approval before access.
+          await requestAccess(
+            data.user.id,
+            email,
+            roleErr ? "pending" : "approved",
+          );
+
+          if (roleErr) {
+            toast.success(
+              "Account created. An admin must approve your access before you can sign in.",
+            );
+            setMode("login");
+            return;
+          }
         }
 
         if (data.session) {
@@ -42,6 +57,7 @@ export function LoginPage() {
           toast.success("Account created. Check your email to confirm, then sign in.");
           setMode("login");
         }
+
       } else {
         await signIn(email, password);
       }
