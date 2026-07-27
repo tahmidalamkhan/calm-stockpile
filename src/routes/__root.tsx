@@ -107,7 +107,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function AuthedShell() {
-  const { loading, session } = useAuth();
+  const { loading, session, role, access } = useAuth();
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
