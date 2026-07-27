@@ -116,6 +116,7 @@ function AuthedShell() {
     );
   }
   if (!session) return <LoginPage />;
+  if (!role && access && access !== "approved") return <PendingApprovalPage />;
   return (
     <CompanyProvider>
       <AppLayout>
