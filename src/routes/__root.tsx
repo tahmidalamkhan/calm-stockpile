@@ -12,6 +12,7 @@ import appCss from "../styles.css?url";
 import { CompanyProvider } from "@/lib/mock/store";
 import { AppLayout } from "@/components/app/AppLayout";
 import { LoginPage } from "@/components/app/LoginPage";
+import { PendingApprovalPage } from "@/components/app/PendingApprovalPage";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
 
