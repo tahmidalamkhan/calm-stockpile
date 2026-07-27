@@ -166,6 +166,8 @@ function UsersPage() {
         }
       />
 
+      <PendingApprovals />
+
       <Card>
         <CardContent className="p-0">
           <Table>
