@@ -42,6 +42,7 @@ import {
   deleteUser,
 } from "@/lib/auth.functions";
 import { formatDate } from "@/lib/format";
+import { PendingApprovals } from "@/components/app/PendingApprovals";
 
 export const Route = createFileRoute("/users")({ component: UsersPage });
 
