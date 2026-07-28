@@ -47,7 +47,7 @@ import { PendingApprovals } from "@/components/app/PendingApprovals";
 export const Route = createFileRoute("/users")({ component: UsersPage });
 
 function UsersPage() {
-  const { role, user } = useAuth();
+  const { role, user, session } = useAuth();
   const qc = useQueryClient();
   const fetchUsers = useServerFn(listUsers);
   const doCreate = useServerFn(createUser);
@@ -56,8 +56,8 @@ function UsersPage() {
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["users"],
-    queryFn: () => fetchUsers(),
-    enabled: role === "admin",
+    queryFn: () => fetchUsers({ data: { token: session?.access_token ?? "" } }),
+    enabled: role === "admin" && !!session?.access_token,
   });
 
   const [open, setOpen] = React.useState(false);
@@ -67,7 +67,7 @@ function UsersPage() {
 
   const createMut = useMutation({
     mutationFn: () =>
-      doCreate({ data: { email, password, role: newRole } }),
+      doCreate({ data: { token: session?.access_token ?? "", email, password, role: newRole } }),
     onSuccess: () => {
       toast.success("User created");
       setOpen(false);
@@ -81,7 +81,7 @@ function UsersPage() {
 
   const updateMut = useMutation({
     mutationFn: (v: { userId: string; role: "admin" | "staff" }) =>
-      doUpdate({ data: v }),
+      doUpdate({ data: { token: session?.access_token ?? "", ...v } }),
     onSuccess: () => {
       toast.success("Role updated");
       qc.invalidateQueries({ queryKey: ["users"] });
@@ -90,7 +90,7 @@ function UsersPage() {
   });
 
   const deleteMut = useMutation({
-    mutationFn: (userId: string) => doDelete({ data: { userId } }),
+    mutationFn: (userId: string) => doDelete({ data: { token: session?.access_token ?? "", userId } }),
     onSuccess: () => {
       toast.success("User deleted");
       qc.invalidateQueries({ queryKey: ["users"] });
