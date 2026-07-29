@@ -12,6 +12,8 @@ type AuthValue = {
   role: Role | null;
   /** Approval state for the signed-in account. */
   access: AccessStatus | null;
+  /** True once the role/approval lookup has completed at least once. */
+  roleChecked: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshRole: () => Promise<void>;
