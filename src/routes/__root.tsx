@@ -108,7 +108,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function AuthedShell() {
-  const { loading, session, role, access } = useAuth();
+  const { loading, session, role, access, roleChecked } = useAuth();
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
@@ -117,7 +117,14 @@ function AuthedShell() {
     );
   }
   if (!session) return <LoginPage />;
-  if (!role && access && access !== "approved") return <PendingApprovalPage />;
+  if (!role && !roleChecked) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+        Loading…
+      </div>
+    );
+  }
+  if (!role || access !== "approved") return <PendingApprovalPage />;
   return (
     <CompanyProvider>
       <AppLayout>
