@@ -39,6 +39,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       : null;
   });
   const [loading, setLoading] = React.useState(true);
+  const [roleChecked, setRoleChecked] = React.useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(ROLE_KEY) !== null;
+  });
 
   const loadRole = React.useCallback(async () => {
     try {
@@ -72,12 +76,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         window.localStorage.setItem(ACCESS_KEY, "approved");
       }
     } catch {
+      // Never fall through to granting access on failure — stay pending.
       setRole(null);
-      setAccess(null);
+      setAccess("pending");
       if (typeof window !== "undefined") {
         window.localStorage.removeItem(ROLE_KEY);
-        window.localStorage.removeItem(ACCESS_KEY);
+        window.localStorage.setItem(ACCESS_KEY, "pending");
       }
+    } finally {
+      setRoleChecked(true);
     }
   }, []);
 
@@ -88,6 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!s) {
         setRole(null);
         setAccess(null);
+        setRoleChecked(false);
         if (typeof window !== "undefined") {
           window.localStorage.removeItem(ROLE_KEY);
           window.localStorage.removeItem(ACCESS_KEY);
@@ -105,6 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     return () => sub.subscription.unsubscribe();
   }, [loadRole]);
+
 
   const value: AuthValue = {
     loading,
