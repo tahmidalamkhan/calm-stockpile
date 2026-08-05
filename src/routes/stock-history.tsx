@@ -196,7 +196,7 @@ function StockHistoryPage() {
                     const onHandW = w.inQty + w.outQty;
                     const isActive = warehouseFilter === w.warehouseId;
                     return (
-                      <TableRow key={w.warehouseId}>
+                      <TableRow key={w.warehouseId} className="hover:bg-muted/50 transition-colors">
                         <TableCell className="font-medium">
                           {warehouseName(w.warehouseId)}
                         </TableCell>
@@ -280,7 +280,7 @@ function StockHistoryPage() {
                 ) : (
                   <>
                     {movements.map((m) => (
-                      <TableRow key={m.id}>
+                      <TableRow key={m.id} className="hover:bg-muted/50 transition-colors">
                         <TableCell>{formatDate(m.date)}</TableCell>
                         <TableCell>
                           <Badge variant={typeVariant[m.type] ?? "outline"} className="capitalize">
@@ -396,7 +396,7 @@ function StockHistoryPage() {
                   return (
                     <TableRow
                       key={p.id}
-                      className="cursor-pointer"
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
                       onClick={() => setSelectedId(p.id)}
                     >
                       <TableCell className="font-mono text-xs">{p.sku}</TableCell>
