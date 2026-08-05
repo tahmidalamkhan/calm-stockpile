@@ -196,7 +196,7 @@ function StockHistoryPage() {
                     const onHandW = w.inQty + w.outQty;
                     const isActive = warehouseFilter === w.warehouseId;
                     return (
-                      <TableRow key={w.warehouseId}>
+                      <TableRow key={w.warehouseId} className="hover:bg-muted/50 transition-colors">
                         <TableCell className="font-medium">
                           {warehouseName(w.warehouseId)}
                         </TableCell>
