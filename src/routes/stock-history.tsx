@@ -396,7 +396,7 @@ function StockHistoryPage() {
                   return (
                     <TableRow
                       key={p.id}
-                      className="cursor-pointer"
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
                       onClick={() => setSelectedId(p.id)}
                     >
                       <TableCell className="font-mono text-xs">{p.sku}</TableCell>
