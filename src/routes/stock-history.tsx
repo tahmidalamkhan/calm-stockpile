@@ -280,7 +280,7 @@ function StockHistoryPage() {
                 ) : (
                   <>
                     {movements.map((m) => (
-                      <TableRow key={m.id}>
+                      <TableRow key={m.id} className="hover:bg-muted/50 transition-colors">
                         <TableCell>{formatDate(m.date)}</TableCell>
                         <TableCell>
                           <Badge variant={typeVariant[m.type] ?? "outline"} className="capitalize">
