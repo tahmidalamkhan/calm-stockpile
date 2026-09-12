@@ -284,6 +284,41 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     void reloadMovements(activeCompanyId);
   }, [activeCompanyId, reloadWarehouses, reloadProducts, reloadSuppliers, reloadMovements]);
 
+  // Repair existing valuations: recompute every product's weighted average from
+  // its full receipt history (total value received / total quantity received)
+  // and persist it when the stored value drifted. No movements are created.
+  const syncedAveragesRef = React.useRef<string>("");
+  React.useEffect(() => {
+    if (!activeCompanyId || !products.length || !stockMovements.length) return;
+    const stamp = `${activeCompanyId}|${products.length}|${stockMovements.length}`;
+    if (syncedAveragesRef.current === stamp) return;
+    syncedAveragesRef.current = stamp;
+
+    const drift = products
+      .map((p) => {
+        const history = stockMovements.filter((m) => m.productId === p.id);
+        const exact = weightedAverageCost(history, p.avgCost, p.price);
+        return { id: p.id, rounded: Math.round(exact * 100) / 100, current: p.avgCost };
+      })
+      .filter((d) => d.rounded > 0 && Math.abs(d.rounded - d.current) > 0.005);
+    if (!drift.length) return;
+
+    void (async () => {
+      const applied: Record<string, number> = {};
+      for (const d of drift) {
+        const { error } = await supabase
+          .from("products")
+          .update({ avg_cost: d.rounded })
+          .eq("id", d.id);
+        if (!error) applied[d.id] = d.rounded;
+      }
+      if (!Object.keys(applied).length) return;
+      setProducts((prev) =>
+        prev.map((p) => (applied[p.id] != null ? { ...p, avgCost: applied[p.id] } : p)),
+      );
+    })();
+  }, [activeCompanyId, products, stockMovements]);
+
   const activeCompany = React.useMemo(
     () => companies.find((c) => c.id === activeCompanyId) ?? EMPTY_COMPANY,
     [companies, activeCompanyId],
