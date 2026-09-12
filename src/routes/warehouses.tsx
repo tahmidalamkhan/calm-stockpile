@@ -210,14 +210,14 @@ function WarehousesPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead className="text-right">Quantity</TableHead>
-                <TableHead className="text-right">Avg cost</TableHead>
-                <TableHead className="text-right">Stock value</TableHead>
+                {!isStaff && <TableHead className="text-right">Avg cost</TableHead>}
+                {!isStaff && <TableHead className="text-right">Stock value</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {productsInWarehouse.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={isStaff ? 4 : 6} className="text-center text-muted-foreground">
                     No stock in this warehouse yet.
                   </TableCell>
                 </TableRow>
@@ -228,8 +228,8 @@ function WarehousesPage() {
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell>{p.category}</TableCell>
                     <TableCell className="text-right font-mono">{qty}</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(p.avgCost)}</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(qty * p.avgCost)}</TableCell>
+                    {!isStaff && <TableCell className="text-right font-mono">{formatCurrency(p.avgCost)}</TableCell>}
+                    {!isStaff && <TableCell className="text-right font-mono">{formatCurrency(qty * p.avgCost)}</TableCell>}
                   </TableRow>
                 ))
               )}
