@@ -412,9 +412,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         const nextAvg = new Map<string, number>();
         for (const r of receipts) {
           const product = products.find((p) => p.id === r.productId);
-          if (!product) continue;
           const qty = Math.max(0, onHand.get(r.productId) ?? 0);
-          const avg = nextAvg.get(r.productId) ?? product.avgCost ?? 0;
+          const avg = nextAvg.get(r.productId) ?? product?.avgCost ?? 0;
           const total = qty + r.quantity;
           const value = qty * avg + r.quantity * r.unitCost;
           nextAvg.set(r.productId, total > 0 ? value / total : r.unitCost);
