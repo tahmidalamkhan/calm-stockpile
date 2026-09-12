@@ -266,7 +266,7 @@ function StockHistoryPage() {
                   <TableHead>Party</TableHead>
                   <TableHead>Warehouse</TableHead>
                   <TableHead className="text-right">Quantity</TableHead>
-                  <TableHead className="text-right">Unit cost</TableHead>
+                  <TableHead className="text-right">Unit price</TableHead>
                   <TableHead className="text-right">Value</TableHead>
                 </TableRow>
               </TableHeader>
@@ -315,8 +315,7 @@ function StockHistoryPage() {
                                 (m.type === "adjustment" && m.quantity > 0),
                             )
                             .reduce(
-                              (s, m) =>
-                                s + (m.unitCost || selectedProduct.avgCost || 0) * Math.abs(m.quantity),
+                              (s, m) => s + (m.unitCost || 0) * Math.abs(m.quantity),
                               0,
                             ),
                         )}
@@ -329,8 +328,7 @@ function StockHistoryPage() {
                           movements
                             .filter((m) => m.type === "sale")
                             .reduce(
-                              (s, m) =>
-                                s + (m.unitCost || selectedProduct.price || 0) * Math.abs(m.quantity),
+                              (s, m) => s + (m.unitCost || 0) * Math.abs(m.quantity),
                               0,
                             ),
                         )}
