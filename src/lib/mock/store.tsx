@@ -44,6 +44,7 @@ type CompanyContextValue = {
   }) => Promise<void>;
   deleteProduct: (id: ID) => Promise<void>;
   updateProduct: (p: Product) => Promise<void>;
+  recalculateAverageCosts: () => Promise<number>;
 };
 
 const CompanyContext = React.createContext<CompanyContextValue | null>(null);
