@@ -184,15 +184,16 @@ function WarehousesPage() {
               disabled={productsInWarehouse.length === 0}
               onClick={() => {
                 const wh = list.find((w) => w.id === selectedId);
-                const rows = productsInWarehouse.map(({ p, qty }) => ({
-                  SKU: p.sku,
-                  Name: p.name,
-                  Category: p.category,
-                  Unit: p.unit,
-                  Quantity: qty,
-                  "Avg cost": p.avgCost,
-                  "Stock value": qty * p.avgCost,
-                }));
+                const rows = productsInWarehouse.map(({ p, qty }) => {
+                  const base = {
+                    SKU: p.sku,
+                    Name: p.name,
+                    Category: p.category,
+                    Unit: p.unit,
+                    Quantity: qty,
+                  };
+                  return isStaff ? base : { ...base, "Avg cost": p.avgCost, "Stock value": qty * p.avgCost };
+                });
                 const safe = (wh?.name ?? "warehouse").replace(/[^\w-]+/g, "_");
                 exportRowsToXlsx(rows, `stock-${safe}.xlsx`, wh?.name ?? "Stock");
               }}
