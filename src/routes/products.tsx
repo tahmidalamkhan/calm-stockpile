@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -31,9 +31,18 @@ export const Route = createFileRoute("/products")({
 });
 
 function ProductsPage() {
-  const { activeCompanyId, products, stockMovements, warehouses, deleteProduct } = useCompany();
+  const { activeCompanyId, products, stockMovements, warehouses, deleteProduct, updateProduct } = useCompany();
   const [query, setQuery] = React.useState("");
   const [editing, setEditing] = React.useState<Product | null>(null);
+  const [editMode, setEditMode] = React.useState(false);
+  const [drafts, setDrafts] = React.useState<Record<string, string>>({});
+
+  const savePrice = async (p: Product, raw: string) => {
+    const next = Math.max(0, Number(raw));
+    setDrafts((d) => { const { [p.id]: _drop, ...rest } = d; return rest; });
+    if (!Number.isFinite(next) || next === p.price) return;
+    await updateProduct({ ...p, price: next });
+  };
   const all = products.filter((p) => p.companyId === activeCompanyId);
   const q = query.trim().toLowerCase();
   const list = q
@@ -56,6 +65,9 @@ function ProductsPage() {
       .map((w) => ({ w, qty: qtyAt(productId, w.id) }))
       .filter((x) => x.qty > 0);
 
+  const totalUnitPrice = list.reduce((s, p) => s + p.price, 0);
+  const totalInventoryValue = list.reduce((s, p) => s + p.price * onHand(p.id), 0);
+
   return (
     <>
       <PageHeader
@@ -73,6 +85,13 @@ function ProductsPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
+            <Button
+              variant={editMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setEditMode((v) => !v)}
+            >
+              {editMode ? "Done editing" : "Edit mode"}
+            </Button>
           </div>
           <Table>
             <TableHeader>
@@ -112,7 +131,22 @@ function ProductsPage() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(p.price)}</TableCell>
+                    <TableCell className="text-right font-mono">
+                      {editMode ? (
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          className="h-8 w-28 text-right font-mono"
+                          value={drafts[p.id] ?? String(p.price ?? "")}
+                          onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: e.target.value }))}
+                          onBlur={(e) => void savePrice(p, e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+                        />
+                      ) : (
+                        formatCurrency(p.price)
+                      )}
+                    </TableCell>
                     <TableCell className="text-right">
                       {low ? (
                         <Badge variant="destructive">{qty}</Badge>
@@ -168,6 +202,16 @@ function ProductsPage() {
                 );
               })}
             </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell colSpan={5} className="font-medium">Totals</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(totalUnitPrice)}</TableCell>
+                <TableCell colSpan={3} className="text-right">
+                  <span className="text-muted-foreground">Total inventory value: </span>
+                  <span className="font-mono font-medium">{formatCurrency(totalInventoryValue)}</span>
+                </TableCell>
+              </TableRow>
+            </TableFooter>
           </Table>
         </CardContent>
       </Card>
