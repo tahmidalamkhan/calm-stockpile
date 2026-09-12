@@ -178,7 +178,7 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
 
         <p className="text-xs text-muted-foreground">
           Required columns: <code>sku</code>, <code>name</code>, <code>quantity</code>, <code>cost</code>.
-          Products are matched by SKU — existing SKUs get a stock adjustment into this warehouse;
+          Products are matched by SKU — existing SKUs get a purchase (stock in) into this warehouse;
           new SKUs are created as new products.
         </p>
 
