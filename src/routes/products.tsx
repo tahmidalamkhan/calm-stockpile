@@ -31,9 +31,18 @@ export const Route = createFileRoute("/products")({
 });
 
 function ProductsPage() {
-  const { activeCompanyId, products, stockMovements, warehouses, deleteProduct } = useCompany();
+  const { activeCompanyId, products, stockMovements, warehouses, deleteProduct, updateProduct } = useCompany();
   const [query, setQuery] = React.useState("");
   const [editing, setEditing] = React.useState<Product | null>(null);
+  const [editMode, setEditMode] = React.useState(false);
+  const [drafts, setDrafts] = React.useState<Record<string, string>>({});
+
+  const savePrice = async (p: Product, raw: string) => {
+    const next = Math.max(0, Number(raw));
+    setDrafts((d) => { const { [p.id]: _drop, ...rest } = d; return rest; });
+    if (!Number.isFinite(next) || next === p.price) return;
+    await updateProduct({ ...p, price: next });
+  };
   const all = products.filter((p) => p.companyId === activeCompanyId);
   const q = query.trim().toLowerCase();
   const list = q
