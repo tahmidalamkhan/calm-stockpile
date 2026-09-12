@@ -398,9 +398,44 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       if (error) { toast.error(`Stock movement: ${error.message}`); return []; }
       const mapped = (data ?? []).map(mapMovement);
       setStockMovements((prev) => [...mapped, ...prev]);
+
+      // Weighted-average cost: receipts (positive quantity with a real price,
+      // excluding transfers) move the product's average cost.
+      const receipts = mapped.filter(
+        (m) => m.quantity > 0 && (m.unitCost ?? 0) > 0 && m.type !== "transfer",
+      );
+      if (receipts.length) {
+        const onHand = new Map<string, number>();
+        for (const m of stockMovements) {
+          onHand.set(m.productId, (onHand.get(m.productId) ?? 0) + m.quantity);
+        }
+        const nextAvg = new Map<string, number>();
+        for (const r of receipts) {
+          const product = products.find((p) => p.id === r.productId);
+          if (!product) continue;
+          const qty = Math.max(0, onHand.get(r.productId) ?? 0);
+          const avg = nextAvg.get(r.productId) ?? product.avgCost ?? 0;
+          const total = qty + r.quantity;
+          const value = qty * avg + r.quantity * r.unitCost;
+          nextAvg.set(r.productId, total > 0 ? value / total : r.unitCost);
+          onHand.set(r.productId, total);
+        }
+        for (const [productId, avg] of nextAvg) {
+          const rounded = Math.round(avg * 100) / 100;
+          const { error: avgErr } = await supabase
+            .from("products")
+            .update({ avg_cost: rounded })
+            .eq("id", productId);
+          if (!avgErr) {
+            setProducts((prev) =>
+              prev.map((p) => (p.id === productId ? { ...p, avgCost: rounded } : p)),
+            );
+          }
+        }
+      }
       return mapped;
     },
-    [activeCompanyId, stockMovements],
+    [activeCompanyId, stockMovements, products],
   );
 
   const addStockMovement: CompanyContextValue["addStockMovement"] = React.useCallback(
