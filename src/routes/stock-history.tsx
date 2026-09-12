@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { useCompany } from "@/lib/mock/store";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
-import { isInventoryReceipt } from "@/lib/inventory-cost";
+import { receiptCostSummary } from "@/lib/inventory-cost";
 
 export const Route = createFileRoute("/stock-history")({
   head: () => ({
