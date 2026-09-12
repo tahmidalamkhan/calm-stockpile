@@ -189,7 +189,7 @@ function StockPage() {
               onClick={() => {
                 const rows = filteredForExport.map((m) => {
                   const { initial, final } = qtyCols(m);
-                  return {
+                  const base = {
                     Date: m.date,
                     Reference: m.reference,
                     Product: ps.find((p) => p.id === m.productId)?.name ?? m.productId,
@@ -197,8 +197,8 @@ function StockPage() {
                     Type: m.type,
                     "Initial Qty": initial,
                     "Final Qty": final,
-                    "Unit cost": m.unitCost,
                   };
+                  return isStaff ? base : { ...base, "Unit cost": m.unitCost };
                 });
 
                 const suffix = fromDate || toDate ? `_${fromDate || "all"}_to_${toDate || "all"}` : "";
