@@ -650,6 +650,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       transferStock,
       deleteProduct,
       updateProduct,
+      recalculateAverageCosts,
     }),
     [
       companies,
