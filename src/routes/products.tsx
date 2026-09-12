@@ -33,7 +33,25 @@ export const Route = createFileRoute("/products")({
 });
 
 function ProductsPage() {
-  const { activeCompanyId, products, stockMovements, warehouses, deleteProduct, updateProduct } = useCompany();
+  const {
+    activeCompanyId, products, stockMovements, warehouses,
+    deleteProduct, updateProduct, recalculateAverageCosts,
+  } = useCompany();
+  const [recalculating, setRecalculating] = React.useState(false);
+
+  const runRecalculate = async () => {
+    setRecalculating(true);
+    try {
+      const updated = await recalculateAverageCosts();
+      toast.success(
+        updated
+          ? `Updated average cost for ${updated} product${updated === 1 ? "" : "s"}.`
+          : "All average costs are already up to date.",
+      );
+    } finally {
+      setRecalculating(false);
+    }
+  };
   const { role } = useAuth();
   const isStaff = role === "staff";
   const [query, setQuery] = React.useState("");
