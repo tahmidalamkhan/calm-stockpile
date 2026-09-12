@@ -24,6 +24,7 @@ import { BulkStockImportDialog } from "@/components/app/BulkStockImportDialog";
 import { formatCurrency } from "@/lib/format";
 import { exportRowsToXlsx } from "@/lib/export-xlsx";
 import { useAuth } from "@/hooks/use-auth";
+import { weightedAverageCost } from "@/lib/inventory-cost";
 
 export const Route = createFileRoute("/warehouses")({
   head: () => ({
@@ -56,6 +57,13 @@ function WarehousesPage() {
     stockMovements
       .filter((m) => m.productId === productId && m.warehouseId === warehouseId)
       .reduce((s, m) => s + m.quantity, 0);
+
+  const averageCost = (productId: string) => {
+    const product = ps.find((item) => item.id === productId);
+    if (!product) return 0;
+    const history = stockMovements.filter((movement) => movement.productId === productId);
+    return weightedAverageCost(history, product.avgCost, product.price);
+  };
 
   const [query, setQuery] = React.useState("");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc" | null>(null);
@@ -185,6 +193,7 @@ function WarehousesPage() {
               onClick={() => {
                 const wh = list.find((w) => w.id === selectedId);
                 const rows = productsInWarehouse.map(({ p, qty }) => {
+                  const cost = averageCost(p.id);
                   const base = {
                     SKU: p.sku,
                     Name: p.name,
@@ -192,7 +201,7 @@ function WarehousesPage() {
                     Unit: p.unit,
                     Quantity: qty,
                   };
-                  return isStaff ? base : { ...base, "Avg cost": p.avgCost, "Stock value": qty * p.avgCost };
+                  return isStaff ? base : { ...base, "Avg cost": cost, "Stock value": qty * cost };
                 });
                 const safe = (wh?.name ?? "warehouse").replace(/[^\w-]+/g, "_");
                 exportRowsToXlsx(rows, `stock-${safe}.xlsx`, wh?.name ?? "Stock");
@@ -222,16 +231,17 @@ function WarehousesPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                productsInWarehouse.map(({ p, qty }) => (
-                  <TableRow key={p.id}>
+                productsInWarehouse.map(({ p, qty }) => {
+                  const cost = averageCost(p.id);
+                  return <TableRow key={p.id}>
                     <TableCell className="font-mono text-xs">{p.sku}</TableCell>
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell>{p.category}</TableCell>
                     <TableCell className="text-right font-mono">{qty}</TableCell>
-                    {!isStaff && <TableCell className="text-right font-mono">{formatCurrency(p.avgCost)}</TableCell>}
-                    {!isStaff && <TableCell className="text-right font-mono">{formatCurrency(qty * p.avgCost)}</TableCell>}
+                    {!isStaff && <TableCell className="text-right font-mono">{formatCurrency(cost)}</TableCell>}
+                    {!isStaff && <TableCell className="text-right font-mono">{formatCurrency(qty * cost)}</TableCell>}
                   </TableRow>
-                ))
+                })
               )}
             </TableBody>
           </Table>

@@ -101,14 +101,6 @@ function mapSupplier(r: Record<string, unknown>): Supplier {
 function mapMovement(r: Record<string, unknown>): StockMovement {
   const d = r.date as string;
   const createdAt = r.created_at as string | undefined;
-  const reference = (r.reference as string) ?? "";
-  const rawType = r.type as StockMovement["type"];
-  // Every bulk stock-in from Excel is a purchase, including rows that were
-  // saved as adjustments before this rule existed.
-  const type: StockMovement["type"] =
-    rawType === "adjustment" && Number(r.quantity) > 0 && reference.startsWith("BULK-")
-      ? "purchase"
-      : rawType;
   return {
     id: r.id as string,
     companyId: r.company_id as string,
@@ -116,7 +108,7 @@ function mapMovement(r: Record<string, unknown>): StockMovement {
     date: typeof d === "string" ? d.slice(0, 10) : new Date(d).toISOString().slice(0, 10),
     productId: r.product_id as string,
     warehouseId: r.warehouse_id as string,
-    type,
+    type: r.type as StockMovement["type"],
     quantity: Number(r.quantity),
     unitCost: Number(r.unit_cost ?? 0),
     reference: (r.reference as string) ?? "",
