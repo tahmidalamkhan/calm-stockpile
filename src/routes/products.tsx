@@ -151,13 +151,14 @@ function ProductsPage() {
                             min={0}
                             step="0.01"
                             className="h-8 w-28 text-right font-mono"
-                            value={drafts[p.id] ?? String(p.price ?? "")}
+                            value={drafts[p.id] ?? String(p.avgCost ?? "")}
                             onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: e.target.value }))}
                             onBlur={(e) => void savePrice(p, e.target.value)}
                             onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
                           />
                         ) : (
-                          formatCurrency(p.price)
+                          formatCurrency(p.avgCost)
+
                         )}
                       </TableCell>
                     )}
