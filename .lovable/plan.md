@@ -21,7 +21,7 @@ new average = (current qty x current average + received qty x paid price)
 
 - Products page: unit price, total value and total inventory value reflect the recalculated average.
 - Dashboard stock value and warehouse stock value use the same figure.
-- Stock history keeps showing each receipt's own cost.
+- Stock history shows the actual price paid on each transaction line, not the product's current average. Buying and selling totals are built from those per-transaction prices.
 
 ## Technical notes
 
