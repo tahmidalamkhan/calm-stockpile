@@ -18,6 +18,7 @@ import { useCompany } from "@/lib/mock/store";
 import { formatCurrency } from "@/lib/format";
 import { NewProductDialog } from "@/components/app/NewProductDialog";
 import { EditProductDialog } from "@/components/app/EditProductDialog";
+import { useAuth } from "@/hooks/use-auth";
 import type { Product } from "@/lib/types";
 
 export const Route = createFileRoute("/products")({
@@ -32,6 +33,8 @@ export const Route = createFileRoute("/products")({
 
 function ProductsPage() {
   const { activeCompanyId, products, stockMovements, warehouses, deleteProduct, updateProduct } = useCompany();
+  const { role } = useAuth();
+  const isStaff = role === "staff";
   const [query, setQuery] = React.useState("");
   const [editing, setEditing] = React.useState<Product | null>(null);
   const [editMode, setEditMode] = React.useState(false);
@@ -85,13 +88,15 @@ function ProductsPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
-            <Button
-              variant={editMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setEditMode((v) => !v)}
-            >
-              {editMode ? "Done editing" : "Edit mode"}
-            </Button>
+            {!isStaff && (
+              <Button
+                variant={editMode ? "default" : "outline"}
+                size="sm"
+                onClick={() => setEditMode((v) => !v)}
+              >
+                {editMode ? "Done editing" : "Edit mode"}
+              </Button>
+            )}
           </div>
           <Table>
             <TableHeader>
@@ -101,8 +106,8 @@ function ProductsPage() {
                 <TableHead>Category</TableHead>
                 <TableHead>Unit</TableHead>
                 <TableHead>Warehouses</TableHead>
-                <TableHead className="text-right">Unit price</TableHead>
-                <TableHead className="text-right">Total value</TableHead>
+                {!isStaff && <TableHead className="text-right">Unit price</TableHead>}
+                {!isStaff && <TableHead className="text-right">Total value</TableHead>}
                 <TableHead className="text-right">On hand</TableHead>
                 <TableHead className="text-right">Reorder</TableHead>
                 <TableHead className="w-12"></TableHead>
@@ -135,23 +140,25 @@ function ProductsPage() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {editMode ? (
-                        <Input
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          className="h-8 w-28 text-right font-mono"
-                          value={drafts[p.id] ?? String(p.price ?? "")}
-                          onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: e.target.value }))}
-                          onBlur={(e) => void savePrice(p, e.target.value)}
-                          onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
-                        />
-                      ) : (
-                        formatCurrency(p.price)
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(rowValue)}</TableCell>
+                    {!isStaff && (
+                      <TableCell className="text-right font-mono">
+                        {editMode ? (
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            className="h-8 w-28 text-right font-mono"
+                            value={drafts[p.id] ?? String(p.price ?? "")}
+                            onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: e.target.value }))}
+                            onBlur={(e) => void savePrice(p, e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+                          />
+                        ) : (
+                          formatCurrency(p.price)
+                        )}
+                      </TableCell>
+                    )}
+                    {!isStaff && <TableCell className="text-right font-mono">{formatCurrency(rowValue)}</TableCell>}
                     <TableCell className="text-right">
                       {low ? (
                         <Badge variant="destructive">{qty}</Badge>
@@ -207,14 +214,16 @@ function ProductsPage() {
                 );
               })}
             </TableBody>
-            <TableFooter>
-              <TableRow>
-                <TableCell colSpan={5} className="font-medium">Totals</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(totalUnitPrice)}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(totalInventoryValue)}</TableCell>
-                <TableCell colSpan={3}></TableCell>
-              </TableRow>
-            </TableFooter>
+            {!isStaff && (
+              <TableFooter>
+                <TableRow>
+                  <TableCell colSpan={5} className="font-medium">Totals</TableCell>
+                  <TableCell className="text-right font-mono">{formatCurrency(totalUnitPrice)}</TableCell>
+                  <TableCell className="text-right font-mono">{formatCurrency(totalInventoryValue)}</TableCell>
+                  <TableCell colSpan={3}></TableCell>
+                </TableRow>
+              </TableFooter>
+            )}
           </Table>
         </CardContent>
       </Card>

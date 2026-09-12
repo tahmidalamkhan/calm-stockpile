@@ -23,6 +23,7 @@ import { NewWarehouseDialog } from "@/components/app/NewWarehouseDialog";
 import { BulkStockImportDialog } from "@/components/app/BulkStockImportDialog";
 import { formatCurrency } from "@/lib/format";
 import { exportRowsToXlsx } from "@/lib/export-xlsx";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/warehouses")({
   head: () => ({
@@ -36,6 +37,8 @@ export const Route = createFileRoute("/warehouses")({
 
 function WarehousesPage() {
   const { activeCompanyId, warehouses, products, stockMovements, deleteWarehouse, setDefaultWarehouse } = useCompany();
+  const { role } = useAuth();
+  const isStaff = role === "staff";
   const list = warehouses.filter((w) => w.companyId === activeCompanyId);
   const ps = products.filter((p) => p.companyId === activeCompanyId);
 
@@ -181,15 +184,16 @@ function WarehousesPage() {
               disabled={productsInWarehouse.length === 0}
               onClick={() => {
                 const wh = list.find((w) => w.id === selectedId);
-                const rows = productsInWarehouse.map(({ p, qty }) => ({
-                  SKU: p.sku,
-                  Name: p.name,
-                  Category: p.category,
-                  Unit: p.unit,
-                  Quantity: qty,
-                  "Avg cost": p.avgCost,
-                  "Stock value": qty * p.avgCost,
-                }));
+                const rows = productsInWarehouse.map(({ p, qty }) => {
+                  const base = {
+                    SKU: p.sku,
+                    Name: p.name,
+                    Category: p.category,
+                    Unit: p.unit,
+                    Quantity: qty,
+                  };
+                  return isStaff ? base : { ...base, "Avg cost": p.avgCost, "Stock value": qty * p.avgCost };
+                });
                 const safe = (wh?.name ?? "warehouse").replace(/[^\w-]+/g, "_");
                 exportRowsToXlsx(rows, `stock-${safe}.xlsx`, wh?.name ?? "Stock");
               }}
@@ -206,14 +210,14 @@ function WarehousesPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead className="text-right">Quantity</TableHead>
-                <TableHead className="text-right">Avg cost</TableHead>
-                <TableHead className="text-right">Stock value</TableHead>
+                {!isStaff && <TableHead className="text-right">Avg cost</TableHead>}
+                {!isStaff && <TableHead className="text-right">Stock value</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {productsInWarehouse.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={isStaff ? 4 : 6} className="text-center text-muted-foreground">
                     No stock in this warehouse yet.
                   </TableCell>
                 </TableRow>
@@ -224,8 +228,8 @@ function WarehousesPage() {
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell>{p.category}</TableCell>
                     <TableCell className="text-right font-mono">{qty}</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(p.avgCost)}</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(qty * p.avgCost)}</TableCell>
+                    {!isStaff && <TableCell className="text-right font-mono">{formatCurrency(p.avgCost)}</TableCell>}
+                    {!isStaff && <TableCell className="text-right font-mono">{formatCurrency(qty * p.avgCost)}</TableCell>}
                   </TableRow>
                 ))
               )}

@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Download } from "lucide-react";
 import { useState } from "react";
 import { exportRowsToXlsx } from "@/lib/export-xlsx";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/stock")({
   head: () => ({
@@ -34,6 +35,8 @@ export const Route = createFileRoute("/stock")({
 
 function StockPage() {
   const { activeCompanyId, products, warehouses, stockMovements } = useCompany();
+  const { role } = useAuth();
+  const isStaff = role === "staff";
   const ws = warehouses.filter((w) => w.companyId === activeCompanyId);
   const ps = products.filter((p) => p.companyId === activeCompanyId);
   const ms = stockMovements.filter((m) => m.companyId === activeCompanyId);
@@ -186,7 +189,7 @@ function StockPage() {
               onClick={() => {
                 const rows = filteredForExport.map((m) => {
                   const { initial, final } = qtyCols(m);
-                  return {
+                  const base = {
                     Date: m.date,
                     Reference: m.reference,
                     Product: ps.find((p) => p.id === m.productId)?.name ?? m.productId,
@@ -194,8 +197,8 @@ function StockPage() {
                     Type: m.type,
                     "Initial Qty": initial,
                     "Final Qty": final,
-                    "Unit cost": m.unitCost,
                   };
+                  return isStaff ? base : { ...base, "Unit cost": m.unitCost };
                 });
 
                 const suffix = fromDate || toDate ? `_${fromDate || "all"}_to_${toDate || "all"}` : "";
@@ -218,7 +221,7 @@ function StockPage() {
                 <TableHead>Type</TableHead>
                 <TableHead className="text-right">Initial Qty</TableHead>
                 <TableHead className="text-right">Final Qty</TableHead>
-                <TableHead className="text-right">Unit cost</TableHead>
+                {!isStaff && <TableHead className="text-right">Unit cost</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -235,7 +238,7 @@ function StockPage() {
                     </TableCell>
                     <TableCell className="text-right font-mono">{initial}</TableCell>
                     <TableCell className="text-right font-mono">{final}</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(m.unitCost)}</TableCell>
+                    {!isStaff && <TableCell className="text-right font-mono">{formatCurrency(m.unitCost)}</TableCell>}
                   </TableRow>
                 );
               })}
