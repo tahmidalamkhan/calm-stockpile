@@ -4,7 +4,7 @@
 import * as React from "react";
 import { supabase } from "@/integrations/supabase/custom-client";
 import { toast } from "sonner";
-import { isInventoryReceipt, weightedAverageCost } from "@/lib/inventory-cost";
+import { isInventoryReceipt, receiptCostSummary, weightedAverageCost } from "@/lib/inventory-cost";
 import type {
   Company,
   Supplier,
