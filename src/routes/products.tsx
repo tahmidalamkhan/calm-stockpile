@@ -202,6 +202,16 @@ function ProductsPage() {
                 );
               })}
             </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell colSpan={5} className="font-medium">Totals</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(totalUnitPrice)}</TableCell>
+                <TableCell colSpan={3} className="text-right">
+                  <span className="text-muted-foreground">Total inventory value: </span>
+                  <span className="font-mono font-medium">{formatCurrency(totalInventoryValue)}</span>
+                </TableCell>
+              </TableRow>
+            </TableFooter>
           </Table>
         </CardContent>
       </Card>
