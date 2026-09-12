@@ -315,8 +315,7 @@ function StockHistoryPage() {
                                 (m.type === "adjustment" && m.quantity > 0),
                             )
                             .reduce(
-                              (s, m) =>
-                                s + (m.unitCost || selectedProduct.avgCost || 0) * Math.abs(m.quantity),
+                              (s, m) => s + (m.unitCost || 0) * Math.abs(m.quantity),
                               0,
                             ),
                         )}
