@@ -465,7 +465,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
           if ((page ?? []).length < pageSize) break;
         }
         if (historyFailed) continue;
-        const exactAverage = weightedAverageCost(history);
+        const fallbackPrice = products.find((p) => p.id === productId)?.price ?? 0;
+        const exactAverage = weightedAverageCost(history, 0, fallbackPrice);
         if (exactAverage <= 0) continue;
         const rounded = Math.round(exactAverage * 100) / 100;
         const { error: avgErr } = await supabase
