@@ -21,6 +21,7 @@ import { EditProductDialog } from "@/components/app/EditProductDialog";
 import { useAuth } from "@/hooks/use-auth";
 import type { Product } from "@/lib/types";
 import { weightedAverageCost } from "@/lib/inventory-cost";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/products")({
   head: () => ({
@@ -33,7 +34,25 @@ export const Route = createFileRoute("/products")({
 });
 
 function ProductsPage() {
-  const { activeCompanyId, products, stockMovements, warehouses, deleteProduct, updateProduct } = useCompany();
+  const {
+    activeCompanyId, products, stockMovements, warehouses,
+    deleteProduct, updateProduct, recalculateAverageCosts,
+  } = useCompany();
+  const [recalculating, setRecalculating] = React.useState(false);
+
+  const runRecalculate = async () => {
+    setRecalculating(true);
+    try {
+      const updated = await recalculateAverageCosts();
+      toast.success(
+        updated
+          ? `Updated average cost for ${updated} product${updated === 1 ? "" : "s"}.`
+          : "All average costs are already up to date.",
+      );
+    } finally {
+      setRecalculating(false);
+    }
+  };
   const { role } = useAuth();
   const isStaff = role === "staff";
   const [query, setQuery] = React.useState("");
@@ -97,13 +116,18 @@ function ProductsPage() {
               onChange={(e) => setQuery(e.target.value)}
             />
             {!isStaff && (
-              <Button
-                variant={editMode ? "default" : "outline"}
-                size="sm"
-                onClick={() => setEditMode((v) => !v)}
-              >
-                {editMode ? "Done editing" : "Edit mode"}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" disabled={recalculating} onClick={runRecalculate}>
+                  {recalculating ? "Recalculating…" : "Recalculate average costs"}
+                </Button>
+                <Button
+                  variant={editMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setEditMode((v) => !v)}
+                >
+                  {editMode ? "Done editing" : "Edit mode"}
+                </Button>
+              </div>
             )}
           </div>
           <Table>
