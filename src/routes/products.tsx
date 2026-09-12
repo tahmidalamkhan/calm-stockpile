@@ -85,6 +85,13 @@ function ProductsPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
+            <Button
+              variant={editMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setEditMode((v) => !v)}
+            >
+              {editMode ? "Done editing" : "Edit mode"}
+            </Button>
           </div>
           <Table>
             <TableHeader>
