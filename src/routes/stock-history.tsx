@@ -266,7 +266,7 @@ function StockHistoryPage() {
                   <TableHead>Party</TableHead>
                   <TableHead>Warehouse</TableHead>
                   <TableHead className="text-right">Quantity</TableHead>
-                  <TableHead className="text-right">Unit cost</TableHead>
+                  <TableHead className="text-right">Unit price</TableHead>
                   <TableHead className="text-right">Value</TableHead>
                 </TableRow>
               </TableHeader>
