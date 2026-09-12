@@ -399,39 +399,43 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       const mapped = (data ?? []).map(mapMovement);
       setStockMovements((prev) => [...mapped, ...prev]);
 
-      // Weighted-average cost: receipts (positive quantity with a real price,
-      // excluding transfers) move the product's average cost.
-      const receipts = mapped.filter(
-        (m) => m.quantity > 0 && (m.unitCost ?? 0) > 0 && m.type !== "transfer",
+      // Weighted-average cost: rebuild it from the full purchase history of each
+      // affected product so it always matches the recorded buying value.
+      const affected = Array.from(
+        new Set(
+          mapped
+            .filter((m) => m.quantity > 0 && (m.unitCost ?? 0) > 0 && m.type !== "transfer")
+            .map((m) => m.productId),
+        ),
       );
-      if (receipts.length) {
-        const onHand = new Map<string, number>();
-        for (const m of stockMovements) {
-          onHand.set(m.productId, (onHand.get(m.productId) ?? 0) + m.quantity);
+      for (const productId of affected) {
+        const { data: hist, error: histErr } = await supabase
+          .from("stock_movements")
+          .select("type, quantity, unit_cost")
+          .eq("product_id", productId);
+        if (histErr || !hist) continue;
+        let qtyIn = 0;
+        let valueIn = 0;
+        for (const h of hist) {
+          const qty = Number(h.quantity ?? 0);
+          const cost = Number(h.unit_cost ?? 0);
+          if (h.type === "transfer" || qty <= 0 || cost <= 0) continue;
+          qtyIn += qty;
+          valueIn += qty * cost;
         }
-        const nextAvg = new Map<string, number>();
-        for (const r of receipts) {
-          const product = products.find((p) => p.id === r.productId);
-          const qty = Math.max(0, onHand.get(r.productId) ?? 0);
-          const avg = nextAvg.get(r.productId) ?? product?.avgCost ?? 0;
-          const total = qty + r.quantity;
-          const value = qty * avg + r.quantity * r.unitCost;
-          nextAvg.set(r.productId, total > 0 ? value / total : r.unitCost);
-          onHand.set(r.productId, total);
-        }
-        for (const [productId, avg] of nextAvg) {
-          const rounded = Math.round(avg * 100) / 100;
-          const { error: avgErr } = await supabase
-            .from("products")
-            .update({ avg_cost: rounded })
-            .eq("id", productId);
-          if (!avgErr) {
-            setProducts((prev) =>
-              prev.map((p) => (p.id === productId ? { ...p, avgCost: rounded } : p)),
-            );
-          }
+        if (qtyIn <= 0) continue;
+        const rounded = Math.round((valueIn / qtyIn) * 100) / 100;
+        const { error: avgErr } = await supabase
+          .from("products")
+          .update({ avg_cost: rounded })
+          .eq("id", productId);
+        if (!avgErr) {
+          setProducts((prev) =>
+            prev.map((p) => (p.id === productId ? { ...p, avgCost: rounded } : p)),
+          );
         }
       }
+
       return mapped;
     },
     [activeCompanyId, stockMovements, products],
