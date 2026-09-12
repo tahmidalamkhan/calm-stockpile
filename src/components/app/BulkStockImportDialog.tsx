@@ -112,7 +112,7 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
         date: today,
         productId: productId!,
         warehouseId,
-        type: "adjustment",
+        type: "purchase",
         quantity: row.quantity,
         unitCost: row.cost,
         reference: `BULK-${fileName || "import"}`,
