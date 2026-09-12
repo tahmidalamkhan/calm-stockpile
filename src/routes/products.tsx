@@ -43,9 +43,10 @@ function ProductsPage() {
   const savePrice = async (p: Product, raw: string) => {
     const next = Math.max(0, Number(raw));
     setDrafts((d) => { const { [p.id]: _drop, ...rest } = d; return rest; });
-    if (!Number.isFinite(next) || next === p.price) return;
-    await updateProduct({ ...p, price: next });
+    if (!Number.isFinite(next) || next === p.avgCost) return;
+    await updateProduct({ ...p, avgCost: next });
   };
+
   const all = products.filter((p) => p.companyId === activeCompanyId);
   const q = query.trim().toLowerCase();
   const list = q
@@ -68,8 +69,9 @@ function ProductsPage() {
       .map((w) => ({ w, qty: qtyAt(productId, w.id) }))
       .filter((x) => x.qty > 0);
 
-  const totalUnitPrice = list.reduce((s, p) => s + p.price, 0);
-  const totalInventoryValue = list.reduce((s, p) => s + p.price * onHand(p.id), 0);
+  const totalUnitPrice = list.reduce((s, p) => s + p.avgCost, 0);
+  const totalInventoryValue = list.reduce((s, p) => s + p.avgCost * onHand(p.id), 0);
+
 
   return (
     <>
@@ -118,8 +120,9 @@ function ProductsPage() {
                 const qty = onHand(p.id);
                 const low = qty <= p.reorderLevel;
                 const locations = warehousesFor(p.id);
-                const draftPrice = Number(drafts[p.id] ?? p.price);
-                const rowPrice = Number.isFinite(draftPrice) ? Math.max(0, draftPrice) : p.price;
+                const draftPrice = Number(drafts[p.id] ?? p.avgCost);
+                const rowPrice = Number.isFinite(draftPrice) ? Math.max(0, draftPrice) : p.avgCost;
+
                 const rowValue = rowPrice * qty;
                 return (
                   <TableRow key={p.id}>
@@ -148,13 +151,14 @@ function ProductsPage() {
                             min={0}
                             step="0.01"
                             className="h-8 w-28 text-right font-mono"
-                            value={drafts[p.id] ?? String(p.price ?? "")}
+                            value={drafts[p.id] ?? String(p.avgCost ?? "")}
                             onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: e.target.value }))}
                             onBlur={(e) => void savePrice(p, e.target.value)}
                             onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
                           />
                         ) : (
-                          formatCurrency(p.price)
+                          formatCurrency(p.avgCost)
+
                         )}
                       </TableCell>
                     )}
