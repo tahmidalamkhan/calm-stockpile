@@ -120,8 +120,9 @@ function ProductsPage() {
                 const qty = onHand(p.id);
                 const low = qty <= p.reorderLevel;
                 const locations = warehousesFor(p.id);
-                const draftPrice = Number(drafts[p.id] ?? p.price);
-                const rowPrice = Number.isFinite(draftPrice) ? Math.max(0, draftPrice) : p.price;
+                const draftPrice = Number(drafts[p.id] ?? p.avgCost);
+                const rowPrice = Number.isFinite(draftPrice) ? Math.max(0, draftPrice) : p.avgCost;
+
                 const rowValue = rowPrice * qty;
                 return (
                   <TableRow key={p.id}>
