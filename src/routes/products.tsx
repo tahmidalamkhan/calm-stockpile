@@ -21,6 +21,7 @@ import { EditProductDialog } from "@/components/app/EditProductDialog";
 import { useAuth } from "@/hooks/use-auth";
 import type { Product } from "@/lib/types";
 import { weightedAverageCost } from "@/lib/inventory-cost";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/products")({
   head: () => ({
