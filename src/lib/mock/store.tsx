@@ -4,6 +4,7 @@
 import * as React from "react";
 import { supabase } from "@/integrations/supabase/custom-client";
 import { toast } from "sonner";
+import { isInventoryReceipt, weightedAverageCost } from "@/lib/inventory-cost";
 import type {
   Company,
   Supplier,
@@ -231,15 +232,22 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const reloadMovements = React.useCallback(async (companyId: string) => {
-    const { data, error } = await supabase
-      .from("stock_movements")
-      .select("*")
-      .eq("company_id", companyId)
-      .order("date", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(1000);
-    if (error) return toast.error(`Stock movements: ${error.message}`);
-    const mapped = (data ?? []).map(mapMovement);
+    const pageSize = 1000;
+    const rows: Record<string, unknown>[] = [];
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await supabase
+        .from("stock_movements")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .range(from, from + pageSize - 1);
+      if (error) return toast.error(`Stock movements: ${error.message}`);
+      const page = (data ?? []) as Record<string, unknown>[];
+      rows.push(...page);
+      if (page.length < pageSize) break;
+    }
+    const mapped = rows.map(mapMovement);
     const snapshots = stockMovementSnapshots(mapped);
     const missingSnapshotRows: StockMovement[] = [];
     const hydrated = mapped.map((movement) => {
@@ -401,30 +409,30 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
       // Weighted-average cost: rebuild it from the full purchase history of each
       // affected product so it always matches the recorded buying value.
-      const affected = Array.from(
-        new Set(
-          mapped
-            .filter((m) => m.quantity > 0 && (m.unitCost ?? 0) > 0 && m.type !== "transfer")
-            .map((m) => m.productId),
-        ),
-      );
+      const affected = Array.from(new Set(mapped.filter(isInventoryReceipt).map((m) => m.productId)));
       for (const productId of affected) {
-        const { data: hist, error: histErr } = await supabase
-          .from("stock_movements")
-          .select("type, quantity, unit_cost")
-          .eq("product_id", productId);
-        if (histErr || !hist) continue;
-        let qtyIn = 0;
-        let valueIn = 0;
-        for (const h of hist) {
-          const qty = Number(h.quantity ?? 0);
-          const cost = Number(h.unit_cost ?? 0);
-          if (h.type === "transfer" || qty <= 0 || cost <= 0) continue;
-          qtyIn += qty;
-          valueIn += qty * cost;
+        const history: StockMovement[] = [];
+        const pageSize = 1000;
+        let historyFailed = false;
+        for (let from = 0; ; from += pageSize) {
+          const { data: page, error: historyError } = await supabase
+            .from("stock_movements")
+            .select("id, company_id, created_at, date, product_id, warehouse_id, type, quantity, unit_cost, reference, from_qty, to_qty")
+            .eq("product_id", productId)
+            .order("created_at", { ascending: true })
+            .range(from, from + pageSize - 1);
+          if (historyError) {
+            historyFailed = true;
+            toast.error(`Average cost: ${historyError.message}`);
+            break;
+          }
+          history.push(...(page ?? []).map((row) => mapMovement(row as Record<string, unknown>)));
+          if ((page ?? []).length < pageSize) break;
         }
-        if (qtyIn <= 0) continue;
-        const rounded = Math.round((valueIn / qtyIn) * 100) / 100;
+        if (historyFailed) continue;
+        const exactAverage = weightedAverageCost(history);
+        if (exactAverage <= 0) continue;
+        const rounded = Math.round(exactAverage * 100) / 100;
         const { error: avgErr } = await supabase
           .from("products")
           .update({ avg_cost: rounded })
