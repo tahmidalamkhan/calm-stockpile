@@ -97,7 +97,9 @@ export function EditProductDialog({
           warehouseId: row.warehouseId,
           type: "adjustment",
           quantity: target - current,
-          unitCost: avgCost,
+          // Manual stock corrections are not purchases: recording them with a
+          // price would feed the old average back into the WAC calculation.
+          unitCost: 0,
           reference: "EDIT",
           fromQty: current,
           toQty: target,

@@ -67,7 +67,7 @@ function ProductsPage() {
 
   const averageCost = (product: Product) => {
     const history = stockMovements.filter((movement) => movement.productId === product.id);
-    return weightedAverageCost(history, product.avgCost);
+    return weightedAverageCost(history, product.avgCost, product.price);
   };
 
   const warehousesFor = (productId: string) =>
