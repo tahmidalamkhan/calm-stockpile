@@ -1,4 +1,5 @@
 # Roadmap
 
 - [x] Bulk Excel stock-in always counts as a purchase (new and existing SKUs, incl. past imports)
-- [ ] Confirm average unit cost for SKU "-003 far" after reload (awaiting user check)
+- [x] Show cost breakdown on Stock History (units purchased, average, unpriced receipts)
+- [ ] Confirm SKU "-003 far" reads 109.72 (needs user to report breakdown figures)
