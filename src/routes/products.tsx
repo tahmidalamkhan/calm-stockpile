@@ -102,6 +102,7 @@ function ProductsPage() {
                 <TableHead>Unit</TableHead>
                 <TableHead>Warehouses</TableHead>
                 <TableHead className="text-right">Unit price</TableHead>
+                <TableHead className="text-right">Total value</TableHead>
                 <TableHead className="text-right">On hand</TableHead>
                 <TableHead className="text-right">Reorder</TableHead>
                 <TableHead className="w-12"></TableHead>
@@ -112,6 +113,9 @@ function ProductsPage() {
                 const qty = onHand(p.id);
                 const low = qty <= p.reorderLevel;
                 const locations = warehousesFor(p.id);
+                const draftPrice = Number(drafts[p.id] ?? p.price);
+                const rowPrice = Number.isFinite(draftPrice) ? Math.max(0, draftPrice) : p.price;
+                const rowValue = rowPrice * qty;
                 return (
                   <TableRow key={p.id}>
                     <TableCell className="font-mono text-xs">{p.sku}</TableCell>
@@ -147,6 +151,7 @@ function ProductsPage() {
                         formatCurrency(p.price)
                       )}
                     </TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(rowValue)}</TableCell>
                     <TableCell className="text-right">
                       {low ? (
                         <Badge variant="destructive">{qty}</Badge>
@@ -206,10 +211,8 @@ function ProductsPage() {
               <TableRow>
                 <TableCell colSpan={5} className="font-medium">Totals</TableCell>
                 <TableCell className="text-right font-mono">{formatCurrency(totalUnitPrice)}</TableCell>
-                <TableCell colSpan={3} className="text-right">
-                  <span className="text-muted-foreground">Total inventory value: </span>
-                  <span className="font-mono font-medium">{formatCurrency(totalInventoryValue)}</span>
-                </TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(totalInventoryValue)}</TableCell>
+                <TableCell colSpan={3}></TableCell>
               </TableRow>
             </TableFooter>
           </Table>
