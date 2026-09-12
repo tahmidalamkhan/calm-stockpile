@@ -21,7 +21,7 @@ new average = (current qty x current average + received qty x paid price)
 
 - Products page: unit price, total value and total inventory value reflect the recalculated average.
 - Dashboard stock value and warehouse stock value use the same figure.
-- Stock history keeps showing each receipt's own cost.
+- Stock history shows the actual price paid on each transaction line, not the product's current average. Buying and selling totals are built from those per-transaction prices.
 
 ## Technical notes
 
@@ -30,4 +30,5 @@ new average = (current qty x current average + received qty x paid price)
 - `BulkStockImportDialog.tsx`: route `row.cost` through the same helper rather than setting `avgCost` directly.
 - `NewProductDialog.tsx`: opening stock keeps setting the initial average from the entered price (first receipt).
 - `EditProductDialog.tsx`: Avg cost stays editable for admins; no change needed beyond keeping it writing to `avg_cost`.
+- `stock-history.tsx`: add a Unit price column showing each movement's stored `unitCost`, and stop falling back to `avgCost` in the buying-value total so historical rows reflect the real price paid.
 - Zero or blank cost on a line is treated as "no price given" and is skipped in the average so it cannot drag the value to zero.
