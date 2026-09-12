@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { useCompany } from "@/lib/mock/store";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
-import { receiptCostSummary } from "@/lib/inventory-cost";
+import { receiptCostSummary, weightedAverageCost } from "@/lib/inventory-cost";
 
 export const Route = createFileRoute("/stock-history")({
   head: () => ({
@@ -310,6 +310,42 @@ function StockHistoryPage() {
                       <TableCell className="text-right font-mono text-primary">
                         {formatCurrency(
                           receiptCostSummary(movements, selectedProduct.price).value,
+                        )}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow className="bg-muted/20">
+                      <TableCell colSpan={7} className="text-right text-xs text-muted-foreground">
+                        Units counted as purchased
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs">
+                        {formatNumber(receiptCostSummary(movements, selectedProduct.price).quantity)}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow className="bg-muted/20">
+                      <TableCell colSpan={7} className="text-right text-xs text-muted-foreground">
+                        Average unit cost (buying value ÷ units purchased)
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs">
+                        {formatCurrency(
+                          weightedAverageCost(movements, selectedProduct.avgCost, selectedProduct.price),
+                        )}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow className="bg-muted/20">
+                      <TableCell colSpan={7} className="text-right text-xs text-muted-foreground">
+                        Purchases with no price recorded (excluded)
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs">
+                        {formatNumber(
+                          movements
+                            .filter(
+                              (m) =>
+                                m.quantity > 0 &&
+                                m.type !== "transfer" &&
+                                !(Number(m.unitCost) > 0) &&
+                                !(Number(selectedProduct.price) > 0),
+                            )
+                            .reduce((s, m) => s + m.quantity, 0),
                         )}
                       </TableCell>
                     </TableRow>
