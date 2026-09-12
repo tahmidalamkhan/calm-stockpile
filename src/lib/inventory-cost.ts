@@ -1,17 +1,26 @@
 import type { StockMovement } from "@/lib/types";
 
-type CostMovement = Pick<StockMovement, "type" | "quantity" | "unitCost">;
+type CostMovement = Pick<StockMovement, "type" | "quantity" | "unitCost" | "reference">;
 
 /**
- * A receipt is any movement that brings inventory in with a real cost:
- * purchases, bulk purchases, opening stock and positive adjustments.
- * Sales / stock-outs and both legs of a transfer never affect the average.
+ * Older Excel imports and opening balances were stored as adjustments. Their
+ * source reference distinguishes them from ordinary stock-count corrections.
+ */
+export function isPurchasedInventorySource(reference: string) {
+  const source = reference.trim();
+  return /^(bulk(?:[-_\s]|$)|opening(?:[-_\s]|$))/i.test(source);
+}
+
+/**
+ * A receipt is a positive purchase, or a legacy positive adjustment whose
+ * source identifies a bulk Excel import/opening balance. Ordinary stock-count
+ * adjustments, sales, stock-outs and transfers never affect the average.
  */
 export function isInventoryReceipt(movement: CostMovement) {
   return (
-    movement.type !== "transfer" &&
-    movement.type !== "sale" &&
-    movement.quantity > 0
+    movement.quantity > 0 &&
+    (movement.type === "purchase" ||
+      (movement.type === "adjustment" && isPurchasedInventorySource(movement.reference)))
   );
 }
 
