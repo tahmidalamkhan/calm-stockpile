@@ -69,8 +69,9 @@ function ProductsPage() {
       .map((w) => ({ w, qty: qtyAt(productId, w.id) }))
       .filter((x) => x.qty > 0);
 
-  const totalUnitPrice = list.reduce((s, p) => s + p.price, 0);
-  const totalInventoryValue = list.reduce((s, p) => s + p.price * onHand(p.id), 0);
+  const totalUnitPrice = list.reduce((s, p) => s + p.avgCost, 0);
+  const totalInventoryValue = list.reduce((s, p) => s + p.avgCost * onHand(p.id), 0);
+
 
   return (
     <>
