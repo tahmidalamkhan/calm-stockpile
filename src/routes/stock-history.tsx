@@ -309,12 +309,7 @@ function StockHistoryPage() {
                       <TableCell colSpan={7} className="text-right">Total buying value</TableCell>
                       <TableCell className="text-right font-mono text-primary">
                         {formatCurrency(
-                          movements
-                            .filter(isInventoryReceipt)
-                            .reduce(
-                              (s, m) => s + (m.unitCost || 0) * Math.abs(m.quantity),
-                              0,
-                            ),
+                          receiptCostSummary(movements, selectedProduct.price).value,
                         )}
                       </TableCell>
                     </TableRow>
