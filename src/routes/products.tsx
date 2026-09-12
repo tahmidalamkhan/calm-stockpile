@@ -97,13 +97,18 @@ function ProductsPage() {
               onChange={(e) => setQuery(e.target.value)}
             />
             {!isStaff && (
-              <Button
-                variant={editMode ? "default" : "outline"}
-                size="sm"
-                onClick={() => setEditMode((v) => !v)}
-              >
-                {editMode ? "Done editing" : "Edit mode"}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" disabled={recalculating} onClick={runRecalculate}>
+                  {recalculating ? "Recalculating…" : "Recalculate average costs"}
+                </Button>
+                <Button
+                  variant={editMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setEditMode((v) => !v)}
+                >
+                  {editMode ? "Done editing" : "Edit mode"}
+                </Button>
+              </div>
             )}
           </div>
           <Table>
