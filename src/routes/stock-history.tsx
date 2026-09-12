@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { useCompany } from "@/lib/mock/store";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
+import { isInventoryReceipt } from "@/lib/inventory-cost";
 
 export const Route = createFileRoute("/stock-history")({
   head: () => ({
@@ -309,11 +310,7 @@ function StockHistoryPage() {
                       <TableCell className="text-right font-mono text-primary">
                         {formatCurrency(
                           movements
-                            .filter(
-                              (m) =>
-                                m.type === "purchase" ||
-                                (m.type === "adjustment" && m.quantity > 0),
-                            )
+                            .filter(isInventoryReceipt)
                             .reduce(
                               (s, m) => s + (m.unitCost || 0) * Math.abs(m.quantity),
                               0,

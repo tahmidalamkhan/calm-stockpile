@@ -20,6 +20,7 @@ import { NewProductDialog } from "@/components/app/NewProductDialog";
 import { EditProductDialog } from "@/components/app/EditProductDialog";
 import { useAuth } from "@/hooks/use-auth";
 import type { Product } from "@/lib/types";
+import { weightedAverageCost } from "@/lib/inventory-cost";
 
 export const Route = createFileRoute("/products")({
   head: () => ({
@@ -64,20 +65,9 @@ function ProductsPage() {
   const onHand = (productId: string) =>
     stockMovements.filter((m) => m.productId === productId).reduce((s, m) => s + m.quantity, 0);
 
-  // Derive the weighted average from immutable receipt prices so existing
-  // products are correct even when an older saved avg_cost was not refreshed.
   const averageCost = (product: Product) => {
-    const receipts = stockMovements.filter(
-      (m) =>
-        m.productId === product.id &&
-        m.quantity > 0 &&
-        m.type !== "transfer" &&
-        m.unitCost > 0,
-    );
-    const receivedQty = receipts.reduce((sum, m) => sum + m.quantity, 0);
-    if (receivedQty <= 0) return product.avgCost;
-    const receivedValue = receipts.reduce((sum, m) => sum + m.quantity * m.unitCost, 0);
-    return Math.round((receivedValue / receivedQty) * 100) / 100;
+    const history = stockMovements.filter((movement) => movement.productId === product.id);
+    return weightedAverageCost(history, product.avgCost);
   };
 
   const warehousesFor = (productId: string) =>
