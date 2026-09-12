@@ -23,6 +23,7 @@ import { NewWarehouseDialog } from "@/components/app/NewWarehouseDialog";
 import { BulkStockImportDialog } from "@/components/app/BulkStockImportDialog";
 import { formatCurrency } from "@/lib/format";
 import { exportRowsToXlsx } from "@/lib/export-xlsx";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/warehouses")({
   head: () => ({
