@@ -140,23 +140,25 @@ function ProductsPage() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {editMode ? (
-                        <Input
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          className="h-8 w-28 text-right font-mono"
-                          value={drafts[p.id] ?? String(p.price ?? "")}
-                          onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: e.target.value }))}
-                          onBlur={(e) => void savePrice(p, e.target.value)}
-                          onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
-                        />
-                      ) : (
-                        formatCurrency(p.price)
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(rowValue)}</TableCell>
+                    {!isStaff && (
+                      <TableCell className="text-right font-mono">
+                        {editMode ? (
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            className="h-8 w-28 text-right font-mono"
+                            value={drafts[p.id] ?? String(p.price ?? "")}
+                            onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: e.target.value }))}
+                            onBlur={(e) => void savePrice(p, e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+                          />
+                        ) : (
+                          formatCurrency(p.price)
+                        )}
+                      </TableCell>
+                    )}
+                    {!isStaff && <TableCell className="text-right font-mono">{formatCurrency(rowValue)}</TableCell>}
                     <TableCell className="text-right">
                       {low ? (
                         <Badge variant="destructive">{qty}</Badge>
@@ -212,14 +214,16 @@ function ProductsPage() {
                 );
               })}
             </TableBody>
-            <TableFooter>
-              <TableRow>
-                <TableCell colSpan={5} className="font-medium">Totals</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(totalUnitPrice)}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(totalInventoryValue)}</TableCell>
-                <TableCell colSpan={3}></TableCell>
-              </TableRow>
-            </TableFooter>
+            {!isStaff && (
+              <TableFooter>
+                <TableRow>
+                  <TableCell colSpan={5} className="font-medium">Totals</TableCell>
+                  <TableCell className="text-right font-mono">{formatCurrency(totalUnitPrice)}</TableCell>
+                  <TableCell className="text-right font-mono">{formatCurrency(totalInventoryValue)}</TableCell>
+                  <TableCell colSpan={3}></TableCell>
+                </TableRow>
+              </TableFooter>
+            )}
           </Table>
         </CardContent>
       </Card>
