@@ -43,9 +43,10 @@ function ProductsPage() {
   const savePrice = async (p: Product, raw: string) => {
     const next = Math.max(0, Number(raw));
     setDrafts((d) => { const { [p.id]: _drop, ...rest } = d; return rest; });
-    if (!Number.isFinite(next) || next === p.price) return;
-    await updateProduct({ ...p, price: next });
+    if (!Number.isFinite(next) || next === p.avgCost) return;
+    await updateProduct({ ...p, avgCost: next });
   };
+
   const all = products.filter((p) => p.companyId === activeCompanyId);
   const q = query.trim().toLowerCase();
   const list = q
