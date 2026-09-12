@@ -64,13 +64,29 @@ function ProductsPage() {
   const onHand = (productId: string) =>
     stockMovements.filter((m) => m.productId === productId).reduce((s, m) => s + m.quantity, 0);
 
+  // Derive the weighted average from immutable receipt prices so existing
+  // products are correct even when an older saved avg_cost was not refreshed.
+  const averageCost = (product: Product) => {
+    const receipts = stockMovements.filter(
+      (m) =>
+        m.productId === product.id &&
+        m.quantity > 0 &&
+        m.type !== "transfer" &&
+        m.unitCost > 0,
+    );
+    const receivedQty = receipts.reduce((sum, m) => sum + m.quantity, 0);
+    if (receivedQty <= 0) return product.avgCost;
+    const receivedValue = receipts.reduce((sum, m) => sum + m.quantity * m.unitCost, 0);
+    return Math.round((receivedValue / receivedQty) * 100) / 100;
+  };
+
   const warehousesFor = (productId: string) =>
     ws
       .map((w) => ({ w, qty: qtyAt(productId, w.id) }))
       .filter((x) => x.qty > 0);
 
-  const totalUnitPrice = list.reduce((s, p) => s + p.avgCost, 0);
-  const totalInventoryValue = list.reduce((s, p) => s + p.avgCost * onHand(p.id), 0);
+  const totalUnitPrice = list.reduce((s, p) => s + averageCost(p), 0);
+  const totalInventoryValue = list.reduce((s, p) => s + averageCost(p) * onHand(p.id), 0);
 
 
   return (
@@ -120,8 +136,9 @@ function ProductsPage() {
                 const qty = onHand(p.id);
                 const low = qty <= p.reorderLevel;
                 const locations = warehousesFor(p.id);
-                const draftPrice = Number(drafts[p.id] ?? p.avgCost);
-                const rowPrice = Number.isFinite(draftPrice) ? Math.max(0, draftPrice) : p.avgCost;
+                const weightedAverage = averageCost(p);
+                const draftPrice = Number(drafts[p.id] ?? weightedAverage);
+                const rowPrice = Number.isFinite(draftPrice) ? Math.max(0, draftPrice) : weightedAverage;
 
                 const rowValue = rowPrice * qty;
                 return (
@@ -151,13 +168,13 @@ function ProductsPage() {
                             min={0}
                             step="0.01"
                             className="h-8 w-28 text-right font-mono"
-                            value={drafts[p.id] ?? String(p.avgCost ?? "")}
+                            value={drafts[p.id] ?? String(weightedAverage ?? "")}
                             onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: e.target.value }))}
                             onBlur={(e) => void savePrice(p, e.target.value)}
                             onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
                           />
                         ) : (
-                          formatCurrency(p.avgCost)
+                          formatCurrency(weightedAverage)
 
                         )}
                       </TableCell>

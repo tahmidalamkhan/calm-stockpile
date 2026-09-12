@@ -429,11 +429,13 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
           .from("products")
           .update({ avg_cost: rounded })
           .eq("id", productId);
-        if (!avgErr) {
-          setProducts((prev) =>
-            prev.map((p) => (p.id === productId ? { ...p, avgCost: rounded } : p)),
-          );
+        if (avgErr) {
+          toast.error(`Average cost: ${avgErr.message}`);
+          continue;
         }
+        setProducts((prev) =>
+          prev.map((p) => (p.id === productId ? { ...p, avgCost: rounded } : p)),
+        );
       }
 
       return mapped;
