@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Download } from "lucide-react";
 import { useState } from "react";
 import { exportRowsToXlsx } from "@/lib/export-xlsx";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/stock")({
   head: () => ({
