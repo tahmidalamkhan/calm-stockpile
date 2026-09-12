@@ -33,6 +33,8 @@ export const Route = createFileRoute("/products")({
 
 function ProductsPage() {
   const { activeCompanyId, products, stockMovements, warehouses, deleteProduct, updateProduct } = useCompany();
+  const { role } = useAuth();
+  const isStaff = role === "staff";
   const [query, setQuery] = React.useState("");
   const [editing, setEditing] = React.useState<Product | null>(null);
   const [editMode, setEditMode] = React.useState(false);
