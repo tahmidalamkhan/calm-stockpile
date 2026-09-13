@@ -25,6 +25,20 @@ type Row = {
   reason?: string;
 };
 
+const normalizeHeader = (header: string) =>
+  header.trim().toLowerCase().replace(/[\s_-]+/g, "");
+
+const valueFor = (row: Record<string, unknown>, aliases: string[]) => {
+  const normalized = new Map(
+    Object.entries(row).map(([key, value]) => [normalizeHeader(key), value]),
+  );
+  for (const alias of aliases) {
+    const value = normalized.get(normalizeHeader(alias));
+    if (value !== undefined && value !== null && String(value).trim() !== "") return value;
+  }
+  return "";
+};
+
 export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouseId?: string }) {
   const { activeCompanyId, warehouses, products, addProduct, addStockMovements } = useCompany();
   const ws = warehouses.filter((w) => w.companyId === activeCompanyId);
@@ -44,17 +58,21 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
 
   const parseRows = (raw: Record<string, unknown>[]): Row[] => {
     return raw.map((r) => {
-      const sku = String(r.sku ?? r.SKU ?? r.Sku ?? "").trim();
-      const name = String(r.name ?? r.Name ?? r.NAME ?? "").trim();
-      const quantity = Number(r.quantity ?? r.Quantity ?? r.QUANTITY ?? r.qty ?? 0);
-      const cost = Number(r.cost ?? r.Cost ?? r.COST ?? r.price ?? 0);
+      const sku = String(valueFor(r, ["sku", "sku code", "product sku", "item sku"])).trim();
+      const name = String(valueFor(r, ["name", "product name", "item name", "product description"])).trim();
+      const quantity = Number(valueFor(r, ["quantity", "qty", "stock quantity"]) || 0);
+      const cost = Number(valueFor(r, ["cost", "unit cost", "price", "unit price"]) || 0);
       if (!sku) return { sku, name, quantity, cost, status: "invalid", reason: "Missing SKU" };
       if (!quantity || quantity <= 0)
         return { sku, name, quantity, cost, status: "invalid", reason: "Invalid quantity" };
       const existing = ps.find((p) => p.sku.toLowerCase() === sku.toLowerCase());
-      return existing
-        ? { sku, name: name || existing.name, quantity, cost, status: "existing", productId: existing.id }
-        : { sku, name, quantity, cost, status: "new" };
+      if (existing) {
+        return { sku, name: existing.name || name, quantity, cost, status: "existing", productId: existing.id };
+      }
+      if (!name) {
+        return { sku, name, quantity, cost, status: "invalid", reason: "Missing product name" };
+      }
+      return { sku, name, quantity, cost, status: "new" };
     });
   };
 
@@ -106,11 +124,12 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
         if (!created) continue;
         productId = created.id;
       }
+      if (!productId) continue;
       movements.push({
         id: "",
         companyId: activeCompanyId,
         date: today,
-        productId: productId!,
+        productId,
         warehouseId,
         type: "purchase",
         quantity: row.quantity,
@@ -177,7 +196,7 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Required columns: <code>sku</code>, <code>name</code>, <code>quantity</code>, <code>cost</code>.
+          Required columns: <code>SKU</code>, <code>Product Name</code> (or <code>Name</code>), <code>Quantity</code>, and <code>Cost</code>.
           Products are matched by SKU — existing SKUs get a purchase (stock in) into this warehouse;
           new SKUs are created as new products.
         </p>
