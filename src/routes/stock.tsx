@@ -47,6 +47,10 @@ function StockPage() {
       .reduce((s, m) => s + m.quantity, 0);
 
   const warehouseName = (id: string) => ws.find((w) => w.id === id)?.name ?? "—";
+  const productLabel = (id: string) => {
+    const product = ps.find((p) => p.id === id);
+    return product ? `${product.name} — SKU: ${product.sku}` : id;
+  };
   const warehouseLabel = (m: (typeof ms)[number]) => {
     if (m.type !== "transfer") return warehouseName(m.warehouseId);
     const pair = ms.find(
@@ -155,7 +159,9 @@ function StockPage() {
                 const total = ws.reduce((s, w) => s + qty(p.id, w.id), 0);
                 return (
                   <TableRow key={p.id}>
-                    <TableCell className="font-medium">{p.name}</TableCell>
+                    <TableCell className="whitespace-normal break-words font-medium">
+                      {p.name} — <span className="font-mono text-xs text-muted-foreground">SKU: {p.sku}</span>
+                    </TableCell>
                     {ws.map((w) => (
                       <TableCell key={w.id} className="text-right">
                         {qty(p.id, w.id)}
@@ -192,7 +198,7 @@ function StockPage() {
                   const base = {
                     Date: m.date,
                     Reference: m.reference,
-                    Product: ps.find((p) => p.id === m.productId)?.name ?? m.productId,
+                    Product: productLabel(m.productId),
                     Warehouse: warehouseLabel(m),
                     Type: m.type,
                     "Initial Qty": initial,
@@ -231,7 +237,7 @@ function StockPage() {
                   <TableRow key={m.id}>
                     <TableCell>{formatDate(m.date)}</TableCell>
                     <TableCell className="font-mono text-xs">{m.reference}</TableCell>
-                    <TableCell>{ps.find((p) => p.id === m.productId)?.name}</TableCell>
+                    <TableCell className="whitespace-normal break-words">{productLabel(m.productId)}</TableCell>
                     <TableCell>{warehouseLabel(m)}</TableCell>
                     <TableCell>
                       <Badge variant={m.quantity >= 0 ? "default" : "secondary"}>{m.type}</Badge>

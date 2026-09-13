@@ -5,3 +5,4 @@
 - [x] Classify legacy bulk-import adjustments as purchases without counting normal adjustments
 - [x] Use the corrected weighted average in warehouse stock valuation
 - [ ] Confirm SKU "-003 far" reads 109.72 in the external production database
+- [x] Show full product names with SKUs across pages and product selectors
