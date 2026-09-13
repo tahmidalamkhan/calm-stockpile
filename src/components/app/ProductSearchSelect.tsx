@@ -47,15 +47,15 @@ export function ProductSearchSelect({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="h-8 w-full justify-between px-2 font-normal"
+          className="h-auto min-h-8 w-full justify-between whitespace-normal px-2 py-1.5 text-left font-normal"
         >
-          <span className="truncate">
-            {selected ? `${selected.sku} — ${selected.name}` : placeholder}
+          <span className="min-w-0 break-words">
+            {selected ? `${selected.name} — SKU: ${selected.sku}` : placeholder}
           </span>
           <ChevronDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="start">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-80 max-w-[calc(100vw-2rem)] p-0" align="start">
         <Command>
           <CommandInput placeholder="Search by name or SKU…" />
           <CommandList>
@@ -66,7 +66,7 @@ export function ProductSearchSelect({
                 return (
                   <CommandItem
                     key={p.id}
-                    value={`${p.sku} ${p.name}`}
+                    value={`${p.name} ${p.sku}`}
                     disabled={disabled}
                     onSelect={() => {
                       if (!disabled) {
@@ -75,13 +75,13 @@ export function ProductSearchSelect({
                       }
                     }}
                     className={cn(
-                      "flex items-center justify-between",
+                      "flex items-start justify-between",
                       disabled && "opacity-40 pointer-events-none"
                     )}
                   >
-                    <span className="truncate">
-                      <span className="font-medium">{p.sku}</span>
-                      <span className="text-muted-foreground"> — {p.name}</span>
+                    <span className="min-w-0 break-words">
+                      <span className="font-medium">{p.name}</span>
+                      <span className="text-muted-foreground"> — SKU: {p.sku}</span>
                     </span>
                     {value === p.id && (
                       <Check className="ml-2 h-4 w-4 shrink-0" />

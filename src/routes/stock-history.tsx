@@ -425,8 +425,8 @@ function StockHistoryPage() {
                       className="cursor-pointer hover:bg-muted/50 transition-colors"
                       onClick={() => setSelectedId(p.id)}
                     >
-                      <TableCell className="font-mono text-xs">{p.sku}</TableCell>
-                      <TableCell className="font-medium">{p.name}</TableCell>
+                       <TableCell className="whitespace-normal break-all font-mono text-xs">{p.sku}</TableCell>
+                       <TableCell className="whitespace-normal break-words font-medium">{p.name}</TableCell>
                       <TableCell>{p.category}</TableCell>
                       <TableCell className="text-right font-mono">
                         {formatNumber(qty)} {p.unit}

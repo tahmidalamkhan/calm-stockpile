@@ -157,8 +157,8 @@ function ProductsPage() {
                 const rowValue = rowPrice * qty;
                 return (
                   <TableRow key={p.id}>
-                    <TableCell className="font-mono text-xs">{p.sku}</TableCell>
-                    <TableCell className="font-medium">{p.name}</TableCell>
+                    <TableCell className="whitespace-normal break-all font-mono text-xs">{p.sku}</TableCell>
+                    <TableCell className="whitespace-normal break-words font-medium">{p.name}</TableCell>
                     <TableCell>{p.category}</TableCell>
                     <TableCell className="text-muted-foreground">{p.unit}</TableCell>
                     <TableCell>

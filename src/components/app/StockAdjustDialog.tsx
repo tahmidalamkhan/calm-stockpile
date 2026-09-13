@@ -73,9 +73,10 @@ export function StockAdjustDialog({ direction }: { direction: Direction }) {
       for (const l of valid) {
         const avail = qtyAt(l.productId, l.warehouseId);
         if (l.quantity > avail) {
-          const name = ps.find((p) => p.id === l.productId)?.name ?? l.productId;
+          const product = ps.find((p) => p.id === l.productId);
+          const label = product ? `${product.name} — SKU: ${product.sku}` : l.productId;
           const wh = ws.find((w) => w.id === l.warehouseId)?.name ?? l.warehouseId;
-          return toast.error(`${name} in ${wh}: quantity ${l.quantity} exceeds available ${avail}`);
+          return toast.error(`${label} in ${wh}: quantity ${l.quantity} exceeds available ${avail}`);
         }
       }
     }

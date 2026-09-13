@@ -44,7 +44,10 @@ function Dashboard() {
     .sort((a, b) => (a.date < b.date ? 1 : -1))
     .slice(0, 8);
 
-  const productName = (id: string) => ps.find((p) => p.id === id)?.name ?? "—";
+  const productLabel = (id: string) => {
+    const product = ps.find((p) => p.id === id);
+    return product ? `${product.name} — SKU: ${product.sku}` : "—";
+  };
   const warehouseName = (id: string) => ws.find((w) => w.id === id)?.name ?? "—";
 
   const warehouseLabel = (m: (typeof ms)[number]) => {
@@ -132,7 +135,7 @@ function Dashboard() {
                           {m.type}
                         </Badge>
                       </TableCell>
-                      <TableCell>{productName(m.productId)}</TableCell>
+                      <TableCell className="whitespace-normal break-words">{productLabel(m.productId)}</TableCell>
                       <TableCell>{warehouseLabel(m)}</TableCell>
                       <TableCell
                         className={`text-right font-mono ${m.quantity > 0 ? "text-primary" : "text-destructive"}`}
@@ -166,7 +169,7 @@ function Dashboard() {
                   <li key={p.id} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
                       <Package className="h-4 w-4 text-muted-foreground" />
-                      <span>{p.name}</span>
+                      <span className="break-words">{p.name} — SKU: {p.sku}</span>
                     </div>
                     <Badge variant="destructive">{p.qty} {p.unit}</Badge>
                   </li>

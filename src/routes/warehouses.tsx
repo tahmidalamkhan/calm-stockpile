@@ -234,8 +234,8 @@ function WarehousesPage() {
                 productsInWarehouse.map(({ p, qty }) => {
                   const cost = averageCost(p.id);
                   return <TableRow key={p.id}>
-                    <TableCell className="font-mono text-xs">{p.sku}</TableCell>
-                    <TableCell className="font-medium">{p.name}</TableCell>
+                    <TableCell className="whitespace-normal break-all font-mono text-xs">{p.sku}</TableCell>
+                    <TableCell className="whitespace-normal break-words font-medium">{p.name}</TableCell>
                     <TableCell>{p.category}</TableCell>
                     <TableCell className="text-right font-mono">{qty}</TableCell>
                     {!isStaff && <TableCell className="text-right font-mono">{formatCurrency(cost)}</TableCell>}

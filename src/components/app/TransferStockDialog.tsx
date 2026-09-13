@@ -66,8 +66,9 @@ export function TransferStockDialog() {
     for (const [pid, total] of byProduct) {
       const avail = qtyAt(pid, fromId);
       if (total > avail) {
-        const name = ps.find((p) => p.id === pid)?.name ?? pid;
-        return toast.error(`Total transfer of ${name} (${total}) exceeds available (${avail})`);
+        const product = ps.find((p) => p.id === pid);
+        const label = product ? `${product.name} — SKU: ${product.sku}` : pid;
+        return toast.error(`Total transfer of ${label} (${total}) exceeds available (${avail})`);
       }
     }
     // Group by destination so we send one transfer per destination
