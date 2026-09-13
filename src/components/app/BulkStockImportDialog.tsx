@@ -198,7 +198,7 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
                 <TableHeader>
                   <TableRow>
                     <TableHead>SKU</TableHead>
-                    <TableHead>Name</TableHead>
+                    <TableHead>Product name</TableHead>
                     <TableHead className="text-right">Quantity</TableHead>
                     <TableHead className="text-right">Cost</TableHead>
                     <TableHead>Status</TableHead>
@@ -208,7 +208,14 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
                   {rows.map((r, i) => (
                     <TableRow key={i}>
                       <TableCell className="whitespace-normal break-all font-mono text-xs">{r.sku || <span className="text-muted-foreground">—</span>}</TableCell>
-                      <TableCell className="whitespace-normal break-words">{r.name || <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="min-w-56 whitespace-normal break-words">
+                        {r.name ? (
+                          <>
+                            <div className="font-medium">{r.name}</div>
+                            <div className="break-all font-mono text-xs text-muted-foreground">SKU: {r.sku}</div>
+                          </>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
                       <TableCell className="text-right font-mono">{r.quantity}</TableCell>
                       <TableCell className="text-right font-mono">{r.cost}</TableCell>
                       <TableCell>
