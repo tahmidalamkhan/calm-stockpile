@@ -134,7 +134,7 @@ function ProductsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>SKU</TableHead>
-                <TableHead>Name</TableHead>
+                <TableHead>Product name</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Unit</TableHead>
                 <TableHead>Warehouses</TableHead>
@@ -158,7 +158,10 @@ function ProductsPage() {
                 return (
                   <TableRow key={p.id}>
                     <TableCell className="whitespace-normal break-all font-mono text-xs">{p.sku}</TableCell>
-                    <TableCell className="whitespace-normal break-words font-medium">{p.name}</TableCell>
+                    <TableCell className="min-w-56 whitespace-normal break-words">
+                      <div className="font-medium">{p.name}</div>
+                      <div className="break-all font-mono text-xs text-muted-foreground">SKU: {p.sku}</div>
+                    </TableCell>
                     <TableCell>{p.category}</TableCell>
                     <TableCell className="text-muted-foreground">{p.unit}</TableCell>
                     <TableCell>
