@@ -113,7 +113,7 @@ function WarehousesPage() {
                     <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                   </span>
                 </TableHead>
-                <TableHead>Product name</TableHead>
+                <TableHead>Name</TableHead>
                 <TableHead>Address</TableHead>
                 <TableHead>Default</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -216,7 +216,7 @@ function WarehousesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>SKU</TableHead>
-                <TableHead>Name</TableHead>
+                <TableHead>Product name</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead className="text-right">Quantity</TableHead>
                 {!isStaff && <TableHead className="text-right">Avg cost</TableHead>}
