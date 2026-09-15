@@ -17,6 +17,8 @@ type StockRow = { warehouseId: string; quantity: number };
 
 export function NewProductDialog() {
   const { activeCompanyId, addProduct, warehouses } = useCompany();
+  const { role } = useAuth();
+  const isStaff = role === "staff";
   const companyWarehouses = warehouses.filter((w) => w.companyId === activeCompanyId);
   const defaultWh =
     companyWarehouses.find((w) => w.isDefault)?.id ?? companyWarehouses[0]?.id ?? "";
@@ -93,7 +95,9 @@ export function NewProductDialog() {
           <div className="grid gap-1.5"><Label>Category</Label><Input value={category} onChange={(e) => setCategory(e.target.value)} /></div>
           <div className="grid gap-1.5"><Label>Unit</Label><Input value={unit} placeholder="e.g. pcs, kg, box" onChange={(e) => setUnit(e.target.value)} /></div>
           <div className="grid gap-1.5"><Label>Quantity</Label><Input type="number" min={0} placeholder="Opening qty" value={stockRows[0]?.quantity || ""} onChange={(e) => updateRow(0, { quantity: Math.max(0, Number(e.target.value)) })} /></div>
-          <div className="grid gap-1.5"><Label>Price</Label><Input type="number" min={0} step="0.01" value={price || ""} onChange={(e) => setPrice(Number(e.target.value))} /></div>
+          {!isStaff && (
+            <div className="grid gap-1.5"><Label>Price</Label><Input type="number" min={0} step="0.01" value={price || ""} onChange={(e) => setPrice(Number(e.target.value))} /></div>
+          )}
           <div className="grid gap-1.5"><Label>Reorder level</Label><Input type="number" min={0} value={reorderLevel || ""} onChange={(e) => setReorderLevel(Number(e.target.value))} /></div>
         </div>
 
@@ -137,9 +141,11 @@ export function NewProductDialog() {
               </div>
             ))}
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Opening quantities are valued at the price above.
-          </p>
+          {!isStaff && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Opening quantities are valued at the price above.
+            </p>
+          )}
         </div>
 
         <DialogFooter>
