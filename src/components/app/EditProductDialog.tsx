@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { useCompany } from "@/lib/mock/store";
 import type { Product, StockMovement } from "@/lib/types";
+import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
 type StockRow = { warehouseId: string; quantity: number };
