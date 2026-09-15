@@ -10,6 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useCompany } from "@/lib/mock/store";
+import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
 type StockRow = { warehouseId: string; quantity: number };
