@@ -113,6 +113,16 @@ function StockPage() {
   };
 
 
+  const recentMovements = [...visibleMovements]
+    .sort((a, b) => {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      const aCreated = a.createdAt ?? "";
+      const bCreated = b.createdAt ?? "";
+      if (aCreated !== bCreated) return aCreated < bCreated ? 1 : -1;
+      return b.id.localeCompare(a.id);
+    })
+    .slice(0, 10);
+
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const filteredForExport = visibleMovements.filter((m) => {
@@ -136,6 +146,54 @@ function StockPage() {
         }
       />
 
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Recent stock movements</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Reference</TableHead>
+                <TableHead>Product</TableHead>
+                <TableHead>Warehouse</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead className="text-right">Initial Qty</TableHead>
+                <TableHead className="text-right">Final Qty</TableHead>
+                {!isStaff && <TableHead className="text-right">Unit price</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {recentMovements.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={isStaff ? 7 : 8} className="text-center text-muted-foreground">
+                    No stock movements yet
+                  </TableCell>
+                </TableRow>
+              )}
+              {recentMovements.map((m) => {
+                const { initial, final } = qtyCols(m);
+                return (
+                  <TableRow key={`recent-${m.id}`}>
+                    <TableCell>{formatDate(m.date)}</TableCell>
+                    <TableCell className="font-mono text-xs">{m.reference}</TableCell>
+                    <TableCell className="whitespace-normal break-words">{productLabel(m.productId)}</TableCell>
+                    <TableCell>{warehouseLabel(m)}</TableCell>
+                    <TableCell>
+                      <Badge variant={m.quantity >= 0 ? "default" : "secondary"}>{m.type}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono">{initial}</TableCell>
+                    <TableCell className="text-right font-mono">{final}</TableCell>
+                    {!isStaff && <TableCell className="text-right font-mono">{formatCurrency(m.unitCost)}</TableCell>}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       <Card className="mb-6">
         <CardHeader>
