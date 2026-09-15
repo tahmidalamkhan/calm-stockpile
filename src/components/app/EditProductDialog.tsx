@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { useCompany } from "@/lib/mock/store";
 import type { Product, StockMovement } from "@/lib/types";
+import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
 type StockRow = { warehouseId: string; quantity: number };
@@ -27,6 +28,8 @@ export function EditProductDialog({
   const {
     activeCompanyId, updateProduct, warehouses, stockMovements, addStockMovements,
   } = useCompany();
+  const { role } = useAuth();
+  const isStaff = role === "staff";
   const companyWarehouses = warehouses.filter((w) => w.companyId === activeCompanyId);
   const defaultWh =
     companyWarehouses.find((w) => w.isDefault)?.id ?? companyWarehouses[0]?.id ?? "";
@@ -120,8 +123,12 @@ export function EditProductDialog({
           <div className="grid gap-1.5"><Label>SKU</Label><Input value={sku} onChange={(e) => setSku(e.target.value)} /></div>
           <div className="grid gap-1.5"><Label>Category</Label><Input value={category} onChange={(e) => setCategory(e.target.value)} /></div>
           <div className="grid gap-1.5"><Label>Unit</Label><Input value={unit} placeholder="e.g. pcs, kg, box" onChange={(e) => setUnit(e.target.value)} /></div>
-          <div className="grid gap-1.5"><Label>Avg cost</Label><Input type="number" min={0} step="0.01" value={avgCost || ""} onChange={(e) => setAvgCost(Number(e.target.value))} /></div>
-          <div className="grid gap-1.5"><Label>Price</Label><Input type="number" min={0} step="0.01" value={price || ""} onChange={(e) => setPrice(Number(e.target.value))} /></div>
+          {!isStaff && (
+            <div className="grid gap-1.5"><Label>Avg cost</Label><Input type="number" min={0} step="0.01" value={avgCost || ""} onChange={(e) => setAvgCost(Number(e.target.value))} /></div>
+          )}
+          {!isStaff && (
+            <div className="grid gap-1.5"><Label>Price</Label><Input type="number" min={0} step="0.01" value={price || ""} onChange={(e) => setPrice(Number(e.target.value))} /></div>
+          )}
           <div className="grid gap-1.5"><Label>Reorder level</Label><Input type="number" min={0} value={reorderLevel || ""} onChange={(e) => setReorderLevel(Number(e.target.value))} /></div>
         </div>
 
