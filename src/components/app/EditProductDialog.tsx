@@ -27,6 +27,8 @@ export function EditProductDialog({
   const {
     activeCompanyId, updateProduct, warehouses, stockMovements, addStockMovements,
   } = useCompany();
+  const { role } = useAuth();
+  const isStaff = role === "staff";
   const companyWarehouses = warehouses.filter((w) => w.companyId === activeCompanyId);
   const defaultWh =
     companyWarehouses.find((w) => w.isDefault)?.id ?? companyWarehouses[0]?.id ?? "";
