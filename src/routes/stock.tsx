@@ -270,7 +270,53 @@ function StockPage() {
                 exportRowsToXlsx(rows, `stock-movements${suffix}.xlsx`, "Movements");
               }}
             >
-              <Download className="mr-1 h-4 w-4" /> Export
+              <Download className="mr-1 h-4 w-4" /> Export Excel
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={filteredForExport.length === 0}
+              onClick={() => {
+                const columns = [
+                  "Date",
+                  "Reference",
+                  "Product",
+                  "Warehouse",
+                  "Type",
+                  "Initial Qty",
+                  "Final Qty",
+                  ...(isStaff ? [] : ["Unit cost"]),
+                ];
+                const rows = filteredForExport.map((m) => {
+                  const { initial, final } = qtyCols(m);
+                  const base: (string | number)[] = [
+                    formatDate(m.date),
+                    m.reference,
+                    productLabel(m.productId),
+                    warehouseLabel(m),
+                    m.type,
+                    initial,
+                    final,
+                  ];
+                  if (!isStaff) base.push(formatCurrency(m.unitCost));
+                  return base;
+                });
+
+                const suffix = fromDate || toDate ? `_${fromDate || "all"}_to_${toDate || "all"}` : "";
+                const range =
+                  fromDate || toDate
+                    ? `Date range: ${fromDate || "start"} to ${toDate || "today"}`
+                    : "All dates";
+                exportRowsToPdf(
+                  columns,
+                  rows,
+                  `stock-movements${suffix}.pdf`,
+                  "Stock Movements",
+                  range,
+                );
+              }}
+            >
+              <FileText className="mr-1 h-4 w-4" /> Export PDF
             </Button>
           </div>
         </CardHeader>
