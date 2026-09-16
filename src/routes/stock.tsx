@@ -18,9 +18,10 @@ import { StockAdjustmentDialog } from "@/components/app/StockAdjustmentDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Download } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 import { useState } from "react";
 import { exportRowsToXlsx } from "@/lib/export-xlsx";
+import { exportRowsToPdf } from "@/lib/export-pdf";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/stock")({
