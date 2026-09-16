@@ -149,8 +149,63 @@ function StockPage() {
 
 
       <Card className="mb-6">
-        <CardHeader>
+        <CardHeader className="flex flex-col items-stretch gap-3 space-y-0 sm:flex-row sm:items-end sm:justify-between">
           <CardTitle>Recent stock movements</CardTitle>
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="grid gap-1">
+              <Label className="text-xs">From</Label>
+              <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="h-9 w-36" />
+            </div>
+            <div className="grid gap-1">
+              <Label className="text-xs">To</Label>
+              <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="h-9 w-36" />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={filteredForExport.length === 0}
+              onClick={() => {
+                const columns = [
+                  "Date",
+                  "Reference",
+                  "Product",
+                  "Warehouse",
+                  "Type",
+                  "Initial Qty",
+                  "Final Qty",
+                  ...(isStaff ? [] : ["Unit price"]),
+                ];
+                const rows = filteredForExport.map((m) => {
+                  const { initial, final } = qtyCols(m);
+                  const base: (string | number)[] = [
+                    formatDate(m.date),
+                    m.reference,
+                    productLabel(m.productId),
+                    warehouseLabel(m),
+                    m.type,
+                    initial,
+                    final,
+                  ];
+                  if (!isStaff) base.push(formatCurrency(m.unitCost));
+                  return base;
+                });
+                const suffix = fromDate || toDate ? `_${fromDate || "all"}_to_${toDate || "all"}` : "";
+                const range =
+                  fromDate || toDate
+                    ? `Date range: ${fromDate || "start"} to ${toDate || "today"}`
+                    : "All dates";
+                exportRowsToPdf(
+                  columns,
+                  rows,
+                  `recent-stock-movements${suffix}.pdf`,
+                  "Recent Stock Movements",
+                  range,
+                );
+              }}
+            >
+              <FileText className="mr-1 h-4 w-4" /> Export PDF
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
