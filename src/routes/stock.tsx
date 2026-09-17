@@ -337,11 +337,10 @@ function StockPage() {
                   "Type",
                   "Initial Qty",
                   "Final Qty",
-                  ...(isStaff ? [] : ["Unit cost"]),
                 ];
                 const rows = filteredForExport.map((m) => {
                   const { initial, final } = qtyCols(m);
-                  const base: (string | number)[] = [
+                  return [
                     formatDate(m.date),
                     m.reference,
                     productLabel(m.productId),
@@ -350,8 +349,6 @@ function StockPage() {
                     initial,
                     final,
                   ];
-                  if (!isStaff) base.push(formatCurrency(m.unitCost));
-                  return base;
                 });
 
                 const suffix = fromDate || toDate ? `_${fromDate || "all"}_to_${toDate || "all"}` : "";
