@@ -321,6 +321,7 @@ function StockPage() {
                     Product: productLabel(m.productId),
                     Warehouse: warehouseLabel(m),
                     Type: m.type,
+                    Units: unitsLabel(m),
                     "Initial Qty": initial,
                     "Final Qty": final,
                   };
@@ -344,6 +345,7 @@ function StockPage() {
                   "Product",
                   "Warehouse",
                   "Type",
+                  "Units",
                   "Initial Qty",
                   "Final Qty",
                 ];
@@ -355,6 +357,7 @@ function StockPage() {
                     productLabel(m.productId),
                     warehouseLabel(m),
                     m.type,
+                    unitsLabel(m),
                     initial,
                     final,
                   ];
@@ -388,6 +391,7 @@ function StockPage() {
                 <TableHead>Product</TableHead>
                 <TableHead>Warehouse</TableHead>
                 <TableHead>Type</TableHead>
+                <TableHead className="text-right">Units</TableHead>
                 <TableHead className="text-right">Initial Qty</TableHead>
                 <TableHead className="text-right">Final Qty</TableHead>
                 {!isStaff && <TableHead className="text-right">Unit cost</TableHead>}
@@ -405,6 +409,7 @@ function StockPage() {
                     <TableCell>
                       <Badge variant={m.quantity >= 0 ? "default" : "secondary"}>{m.type}</Badge>
                     </TableCell>
+                    <TableCell className="text-right font-mono">{unitsLabel(m)}</TableCell>
                     <TableCell className="text-right font-mono">{initial}</TableCell>
                     <TableCell className="text-right font-mono">{final}</TableCell>
                     {!isStaff && <TableCell className="text-right font-mono">{formatCurrency(m.unitCost)}</TableCell>}
