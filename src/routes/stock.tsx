@@ -113,6 +113,11 @@ function StockPage() {
     return balances.get(m.id) ?? { initial: 0, final: 0 };
   };
 
+  // Signed units for the movement: +5 in, -3 out, transfers show the moved
+  // amount, adjustments show the net change applied.
+  const unitsLabel = (m: (typeof ms)[number]) =>
+    m.quantity > 0 ? `+${m.quantity}` : `${m.quantity}`;
+
 
   const recentMovements = [...visibleMovements]
     .sort((a, b) => {
@@ -171,6 +176,7 @@ function StockPage() {
                   "Product",
                   "Warehouse",
                   "Type",
+                  "Units",
                   "Initial Qty",
                   "Final Qty",
                 ];
@@ -182,6 +188,7 @@ function StockPage() {
                     productLabel(m.productId),
                     warehouseLabel(m),
                     m.type,
+                    unitsLabel(m),
                     initial,
                     final,
                   ];
@@ -213,6 +220,7 @@ function StockPage() {
                 <TableHead>Product</TableHead>
                 <TableHead>Warehouse</TableHead>
                 <TableHead>Type</TableHead>
+                <TableHead className="text-right">Units</TableHead>
                 <TableHead className="text-right">Initial Qty</TableHead>
                 <TableHead className="text-right">Final Qty</TableHead>
                 {!isStaff && <TableHead className="text-right">Unit price</TableHead>}
@@ -221,7 +229,7 @@ function StockPage() {
             <TableBody>
               {recentMovements.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={isStaff ? 7 : 8} className="text-center text-muted-foreground">
+                  <TableCell colSpan={isStaff ? 8 : 9} className="text-center text-muted-foreground">
                     No stock movements yet
                   </TableCell>
                 </TableRow>
@@ -237,6 +245,7 @@ function StockPage() {
                     <TableCell>
                       <Badge variant={m.quantity >= 0 ? "default" : "secondary"}>{m.type}</Badge>
                     </TableCell>
+                    <TableCell className="text-right font-mono">{unitsLabel(m)}</TableCell>
                     <TableCell className="text-right font-mono">{initial}</TableCell>
                     <TableCell className="text-right font-mono">{final}</TableCell>
                     {!isStaff && <TableCell className="text-right font-mono">{formatCurrency(m.unitCost)}</TableCell>}
@@ -312,6 +321,7 @@ function StockPage() {
                     Product: productLabel(m.productId),
                     Warehouse: warehouseLabel(m),
                     Type: m.type,
+                    Units: unitsLabel(m),
                     "Initial Qty": initial,
                     "Final Qty": final,
                   };
@@ -335,6 +345,7 @@ function StockPage() {
                   "Product",
                   "Warehouse",
                   "Type",
+                  "Units",
                   "Initial Qty",
                   "Final Qty",
                 ];
@@ -346,6 +357,7 @@ function StockPage() {
                     productLabel(m.productId),
                     warehouseLabel(m),
                     m.type,
+                    unitsLabel(m),
                     initial,
                     final,
                   ];
@@ -379,6 +391,7 @@ function StockPage() {
                 <TableHead>Product</TableHead>
                 <TableHead>Warehouse</TableHead>
                 <TableHead>Type</TableHead>
+                <TableHead className="text-right">Units</TableHead>
                 <TableHead className="text-right">Initial Qty</TableHead>
                 <TableHead className="text-right">Final Qty</TableHead>
                 {!isStaff && <TableHead className="text-right">Unit cost</TableHead>}
@@ -396,6 +409,7 @@ function StockPage() {
                     <TableCell>
                       <Badge variant={m.quantity >= 0 ? "default" : "secondary"}>{m.type}</Badge>
                     </TableCell>
+                    <TableCell className="text-right font-mono">{unitsLabel(m)}</TableCell>
                     <TableCell className="text-right font-mono">{initial}</TableCell>
                     <TableCell className="text-right font-mono">{final}</TableCell>
                     {!isStaff && <TableCell className="text-right font-mono">{formatCurrency(m.unitCost)}</TableCell>}
