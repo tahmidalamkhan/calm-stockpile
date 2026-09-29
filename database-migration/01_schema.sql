@@ -1,3 +1,10 @@
+DO $do$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'gen_random_uuid') THEN
+    EXECUTE 'CREATE FUNCTION gen_random_uuid() RETURNS uuid LANGUAGE sql VOLATILE AS
+      $f$ SELECT md5(random()::text || clock_timestamp()::text)::uuid $f$';
+  END IF;
+END $do$;
+
 
 -- ---------- Enums ----------
 DO $$ BEGIN
