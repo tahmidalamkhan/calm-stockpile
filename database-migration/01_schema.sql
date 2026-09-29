@@ -1,10 +1,3 @@
--- =====================================================================
--- Inventory app — full schema for a standalone PostgreSQL server (13+)
--- Run order: 01_schema.sql  ->  02_data.sql
---   psql -h HOST -U USER -d DBNAME -f 01_schema.sql
---   psql -h HOST -U USER -d DBNAME -f 02_data.sql
--- =====================================================================
-
 CREATE EXTENSION IF NOT EXISTS pgcrypto;  -- gen_random_uuid(), crypt()
 
 -- ---------- Enums ----------
