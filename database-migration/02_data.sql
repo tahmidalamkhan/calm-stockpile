@@ -1,4 +1,3 @@
--- Data export generated 2026-09-28 from the live app database
 BEGIN;
 INSERT INTO app_users (id,email,password_hash,created_at) VALUES ('749feff4-3c1e-4aa4-b7bb-bae2a9b50f49','alhabib.equipments@gmail.com',NULL,'2026-09-12T12:50:10.68788Z') ON CONFLICT DO NOTHING;
 INSERT INTO app_users (id,email,password_hash,created_at) VALUES ('01a3aaca-fa70-4d7c-9aa6-5d832c29225e','farhan.amla92@gmail.com',NULL,'2026-05-21T07:56:45.64802Z') ON CONFLICT DO NOTHING;
