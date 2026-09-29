@@ -141,6 +141,6 @@ BEGIN
   FOREACH t IN ARRAY ARRAY['companies','warehouses','products','suppliers','stock_levels','account_requests'] LOOP
     EXECUTE format('DROP TRIGGER IF EXISTS trg_%1$s_touch ON %1$s;', t);
     EXECUTE format('CREATE TRIGGER trg_%1$s_touch BEFORE UPDATE ON %1$s
-                    FOR EACH ROW EXECUTE FUNCTION touch_updated_at();', t);
+                    FOR EACH ROW EXECUTE PROCEDURE touch_updated_at();', t);
   END LOOP;
 END $$;
