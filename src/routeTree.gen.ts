@@ -9,31 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WarehousesRouteImport } from './routes/warehouses'
-import { Route as UsersRouteImport } from './routes/users'
-import { Route as StockHistoryRouteImport } from './routes/stock-history'
-import { Route as StockRouteImport } from './routes/stock'
-import { Route as ProductsRouteImport } from './routes/products'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProductsRouteImport } from './routes/products'
+import { Route as StockRouteImport } from './routes/stock'
+import { Route as StockHistoryRouteImport } from './routes/stock-history'
+import { Route as UsersRouteImport } from './routes/users'
+import { Route as WarehousesRouteImport } from './routes/warehouses'
 
-const WarehousesRoute = WarehousesRouteImport.update({
-  id: '/warehouses',
-  path: '/warehouses',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const UsersRoute = UsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StockHistoryRoute = StockHistoryRouteImport.update({
-  id: '/stock-history',
-  path: '/stock-history',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StockRoute = StockRouteImport.update({
-  id: '/stock',
-  path: '/stock',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProductsRoute = ProductsRouteImport.update({
@@ -41,9 +26,24 @@ const ProductsRoute = ProductsRouteImport.update({
   path: '/products',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const StockRoute = StockRouteImport.update({
+  id: '/stock',
+  path: '/stock',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StockHistoryRoute = StockHistoryRouteImport.update({
+  id: '/stock-history',
+  path: '/stock-history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WarehousesRoute = WarehousesRouteImport.update({
+  id: '/warehouses',
+  path: '/warehouses',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -75,12 +75,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
-    | '/products'
-    | '/stock'
-    | '/stock-history'
-    | '/users'
-    | '/warehouses'
+    '/' | '/products' | '/stock' | '/stock-history' | '/users' | '/warehouses'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/products' | '/stock' | '/stock-history' | '/users' | '/warehouses'
   id:
@@ -104,32 +99,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/warehouses': {
-      id: '/warehouses'
-      path: '/warehouses'
-      fullPath: '/warehouses'
-      preLoaderRoute: typeof WarehousesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/users': {
-      id: '/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof UsersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/stock-history': {
-      id: '/stock-history'
-      path: '/stock-history'
-      fullPath: '/stock-history'
-      preLoaderRoute: typeof StockHistoryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/stock': {
-      id: '/stock'
-      path: '/stock'
-      fullPath: '/stock'
-      preLoaderRoute: typeof StockRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/products': {
@@ -139,11 +113,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/stock': {
+      id: '/stock'
+      path: '/stock'
+      fullPath: '/stock'
+      preLoaderRoute: typeof StockRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stock-history': {
+      id: '/stock-history'
+      path: '/stock-history'
+      fullPath: '/stock-history'
+      preLoaderRoute: typeof StockHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/warehouses': {
+      id: '/warehouses'
+      path: '/warehouses'
+      fullPath: '/warehouses'
+      preLoaderRoute: typeof WarehousesRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
