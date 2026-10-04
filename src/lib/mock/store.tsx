@@ -206,7 +206,6 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase
       .from("warehouses")
       .select("*")
-      .eq("company_id", companyId)
       .order("created_at", { ascending: true });
     if (error) return toast.error(`Warehouses: ${error.message}`);
     setWarehouses((data ?? []).map(mapWarehouse));
@@ -216,7 +215,6 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase
       .from("products")
       .select("*")
-      .eq("company_id", companyId)
       .order("created_at", { ascending: false });
     if (error) return toast.error(`Products: ${error.message}`);
     setProducts((data ?? []).map(mapProduct));
@@ -226,7 +224,6 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase
       .from("suppliers")
       .select("*")
-      .eq("company_id", companyId)
       .order("created_at", { ascending: false });
     if (error) return toast.error(`Suppliers: ${error.message}`);
     setSuppliers((data ?? []).map(mapSupplier));
@@ -239,7 +236,6 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase
         .from("stock_movements")
         .select("*")
-        .eq("company_id", companyId)
         .order("date", { ascending: false })
         .order("created_at", { ascending: false })
         .range(from, from + pageSize - 1);
@@ -361,7 +357,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       const { error: clearErr } = await supabase
         .from("warehouses")
         .update({ is_default: false })
-        .eq("company_id", activeCompanyId);
+        .neq("id", id);
       if (clearErr) { toast.error(`Set default: ${clearErr.message}`); return; }
       const { error } = await supabase
         .from("warehouses")
