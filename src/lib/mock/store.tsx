@@ -357,7 +357,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       const { error: clearErr } = await supabase
         .from("warehouses")
         .update({ is_default: false })
-        .eq("company_id", activeCompanyId);
+        .neq("id", id);
       if (clearErr) { toast.error(`Set default: ${clearErr.message}`); return; }
       const { error } = await supabase
         .from("warehouses")
