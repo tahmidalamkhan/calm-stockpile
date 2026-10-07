@@ -147,7 +147,7 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
         companyId: activeCompanyId,
         date: today,
         productId,
-        warehouseId,
+        warehouseId: row.warehouseId ?? warehouseId,
         type: "purchase",
         quantity: row.quantity,
         unitCost: row.cost,
@@ -214,7 +214,9 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
 
         <p className="text-xs text-muted-foreground">
           Required columns: <code>SKU</code>, <code>Product Name</code> (or <code>Name</code>), <code>Quantity</code>, and <code>Cost</code>.
-          Products are matched by SKU — existing SKUs get a purchase (stock in) into this warehouse;
+          Optional column: <code>Warehouse</code> (name or code) — rows with it go to that warehouse, so one file can
+          stock several warehouses at once; rows without it go to the warehouse selected above.
+          Products are matched by SKU — existing SKUs get a purchase (stock in);
           new SKUs are created as new products.
         </p>
 
