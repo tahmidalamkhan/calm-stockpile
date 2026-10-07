@@ -43,8 +43,9 @@ const valueFor = (row: Record<string, unknown>, aliases: string[]) => {
 
 export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouseId?: string }) {
   const { activeCompanyId, warehouses, products, addProduct, addStockMovements } = useCompany();
-  const ws = warehouses.filter((w) => w.companyId === activeCompanyId);
-  const ps = products.filter((p) => p.companyId === activeCompanyId);
+  // Match against every warehouse/product, regardless of which company record it was saved under.
+  const ws = warehouses;
+  const ps = products;
 
   const [open, setOpen] = React.useState(false);
   const [warehouseId, setWarehouseId] = React.useState<string>(
@@ -147,23 +148,33 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
     const today = new Date().toISOString().slice(0, 10);
     const ts = Date.now();
 
+    // A new SKU split across several warehouses must be created only once.
+    const createdBySku = new Map<string, string>();
+
     for (let idx = 0; idx < valid.length; idx++) {
       const row = valid[idx];
       let productId = row.productId;
       if (row.status === "new") {
-        const created = await addProduct({
-          id: "",
-          companyId: activeCompanyId,
-          sku: row.sku || `BULK-${ts.toString().slice(-5)}-${idx + 1}`,
-          name: row.name || row.sku,
-          category: "Imported",
-          unit: "pcs",
-          avgCost: row.cost,
-          price: row.cost,
-          reorderLevel: 0,
-        });
-        if (!created) continue;
-        productId = created.id;
+        const skuKey = row.sku.toLowerCase();
+        const already = createdBySku.get(skuKey);
+        if (already) {
+          productId = already;
+        } else {
+          const created = await addProduct({
+            id: "",
+            companyId: activeCompanyId,
+            sku: row.sku || `BULK-${ts.toString().slice(-5)}-${idx + 1}`,
+            name: row.name || row.sku,
+            category: "Imported",
+            unit: "pcs",
+            avgCost: row.cost,
+            price: row.cost,
+            reorderLevel: 0,
+          });
+          if (!created) continue;
+          productId = created.id;
+          createdBySku.set(skuKey, created.id);
+        }
       }
       if (!productId) continue;
       movements.push({
