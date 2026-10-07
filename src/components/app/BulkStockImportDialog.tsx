@@ -59,37 +59,55 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
   }, [initialWarehouseId]);
 
   const parseRows = (raw: Record<string, unknown>[]): Row[] => {
-    return raw.map((r) => {
+    // Detect side-by-side warehouse columns (header = warehouse name or code)
+    const headers = new Set<string>();
+    raw.forEach((r) => Object.keys(r).forEach((k) => headers.add(k)));
+    const whCols = [...headers]
+      .map((h) => {
+        const key = normalizeHeader(h);
+        const wh = ws.find((w) => normalizeHeader(w.name) === key || normalizeHeader(w.code) === key);
+        return wh ? { header: h, wh } : null;
+      })
+      .filter((x): x is { header: string; wh: (typeof ws)[number] } => !!x);
+
+    return raw.flatMap((r): Row[] => {
       const sku = String(valueFor(r, ["sku", "sku code", "product sku", "item sku"])).trim();
       const name = String(valueFor(r, ["name", "product name", "item name", "product description"])).trim();
-      const quantity = Number(valueFor(r, ["quantity", "qty", "stock quantity"]) || 0);
       const cost = Number(valueFor(r, ["cost", "unit cost", "price", "unit price"]) || 0);
+      const existing = sku ? ps.find((p) => p.sku.toLowerCase() === sku.toLowerCase()) : undefined;
+
+      const build = (quantity: number, warehouseId?: string, warehouseLabel?: string): Row => {
+        const base = { sku, name, quantity, cost, warehouseId, warehouseLabel };
+        if (!sku) return { ...base, status: "invalid", reason: "Missing SKU" };
+        if (!quantity || quantity <= 0) return { ...base, status: "invalid", reason: "Invalid quantity" };
+        if (existing) return { ...base, name: existing.name || name, status: "existing", productId: existing.id };
+        if (!name) return { ...base, status: "invalid", reason: "Missing product name" };
+        return { ...base, status: "new" };
+      };
+
+      if (whCols.length) {
+        const out = whCols
+          .map(({ header, wh }) => ({ q: Number(r[header] || 0), wh }))
+          .filter(({ q }) => q > 0)
+          .map(({ q, wh }) => build(q, wh.id, wh.name));
+        if (out.length) return out;
+        const fallbackQty = Number(valueFor(r, ["quantity", "qty", "stock quantity"]) || 0);
+        if (!fallbackQty && !sku && !name) return [];
+        return [build(fallbackQty)];
+      }
+
+      const quantity = Number(valueFor(r, ["quantity", "qty", "stock quantity"]) || 0);
       const warehouseRaw = String(
         valueFor(r, ["warehouse", "warehouse name", "warehouse code", "destination"]),
       ).trim();
-      const base = { sku, name, quantity, cost };
-      if (!sku) return { ...base, status: "invalid", reason: "Missing SKU" };
-      if (!quantity || quantity <= 0)
-        return { ...base, status: "invalid", reason: "Invalid quantity" };
-      let warehouseId: string | undefined;
-      let warehouseLabel: string | undefined;
       if (warehouseRaw) {
         const key = normalizeHeader(warehouseRaw);
-        const wh = ws.find(
-          (w) => normalizeHeader(w.name) === key || normalizeHeader(w.code) === key,
-        );
-        if (!wh) return { ...base, status: "invalid", reason: `Unknown warehouse "${warehouseRaw}"` };
-        warehouseId = wh.id;
-        warehouseLabel = wh.name;
+        const wh = ws.find((w) => normalizeHeader(w.name) === key || normalizeHeader(w.code) === key);
+        if (!wh)
+          return [{ sku, name, quantity, cost, status: "invalid", reason: `Unknown warehouse "${warehouseRaw}"` }];
+        return [build(quantity, wh.id, wh.name)];
       }
-      const existing = ps.find((p) => p.sku.toLowerCase() === sku.toLowerCase());
-      if (existing) {
-        return { ...base, name: existing.name || name, status: "existing", productId: existing.id, warehouseId, warehouseLabel };
-      }
-      if (!name) {
-        return { ...base, status: "invalid", reason: "Missing product name" };
-      }
-      return { ...base, status: "new", warehouseId, warehouseLabel };
+      return [build(quantity)];
     });
   };
 
@@ -105,9 +123,15 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
 
   const downloadTemplate = async () => {
     const XLSX = await import("xlsx");
+    const names = ws.length ? ws.map((w) => w.name) : ["Main Warehouse"];
+    const sample = (sku: string, name: string, cost: number, qtys: number[]) => {
+      const row: Record<string, unknown> = { SKU: sku, "Product Name": name, Cost: cost };
+      names.forEach((n, i) => (row[n] = qtys[i % qtys.length]));
+      return row;
+    };
     const ws2 = XLSX.utils.json_to_sheet([
-      { sku: "SKU-001", name: "Sample Product A", quantity: 10, cost: 12.5, warehouse: ws[0]?.name ?? "Main Warehouse" },
-      { sku: "SKU-002", name: "Sample Product B", quantity: 5, cost: 30, warehouse: ws[1]?.name ?? ws[0]?.name ?? "Main Warehouse" },
+      sample("SKU-001", "Sample Product A", 12.5, [10, 5, 0]),
+      sample("SKU-002", "Sample Product B", 30, [0, 20, 8]),
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws2, "Stock");
@@ -213,9 +237,10 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Required columns: <code>SKU</code>, <code>Product Name</code> (or <code>Name</code>), <code>Quantity</code>, and <code>Cost</code>.
-          Optional column: <code>Warehouse</code> (name or code) — rows with it go to that warehouse, so one file can
-          stock several warehouses at once; rows without it go to the warehouse selected above.
+          Columns: <code>SKU</code>, <code>Product Name</code>, <code>Cost</code>, then one column per warehouse
+          (headed with the warehouse name or code) holding the quantity for that warehouse — leave blank or 0 to skip.
+          Download the template to get your warehouses as columns. Files with a single <code>Quantity</code> column
+          still work and go to the warehouse selected above.
           Products are matched by SKU — existing SKUs get a purchase (stock in);
           new SKUs are created as new products.
         </p>
