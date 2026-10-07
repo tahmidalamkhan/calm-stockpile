@@ -22,6 +22,8 @@ type Row = {
   cost: number;
   status: "new" | "existing" | "invalid";
   productId?: string;
+  warehouseId?: string;
+  warehouseLabel?: string;
   reason?: string;
 };
 
