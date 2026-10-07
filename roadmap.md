@@ -7,3 +7,4 @@
 - [ ] Confirm SKU "-003 far" reads 109.72 in the external production database
 - [x] Show full product names with SKUs across pages and product selectors
 - [x] Read product names from common Excel header formats during bulk import
+- [x] Bulk Excel import can stock multiple warehouses at once via a Warehouse column

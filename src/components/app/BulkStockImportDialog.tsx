@@ -22,6 +22,8 @@ type Row = {
   cost: number;
   status: "new" | "existing" | "invalid";
   productId?: string;
+  warehouseId?: string;
+  warehouseLabel?: string;
   reason?: string;
 };
 
@@ -62,17 +64,32 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
       const name = String(valueFor(r, ["name", "product name", "item name", "product description"])).trim();
       const quantity = Number(valueFor(r, ["quantity", "qty", "stock quantity"]) || 0);
       const cost = Number(valueFor(r, ["cost", "unit cost", "price", "unit price"]) || 0);
-      if (!sku) return { sku, name, quantity, cost, status: "invalid", reason: "Missing SKU" };
+      const warehouseRaw = String(
+        valueFor(r, ["warehouse", "warehouse name", "warehouse code", "destination"]),
+      ).trim();
+      const base = { sku, name, quantity, cost };
+      if (!sku) return { ...base, status: "invalid", reason: "Missing SKU" };
       if (!quantity || quantity <= 0)
-        return { sku, name, quantity, cost, status: "invalid", reason: "Invalid quantity" };
+        return { ...base, status: "invalid", reason: "Invalid quantity" };
+      let warehouseId: string | undefined;
+      let warehouseLabel: string | undefined;
+      if (warehouseRaw) {
+        const key = normalizeHeader(warehouseRaw);
+        const wh = ws.find(
+          (w) => normalizeHeader(w.name) === key || normalizeHeader(w.code) === key,
+        );
+        if (!wh) return { ...base, status: "invalid", reason: `Unknown warehouse "${warehouseRaw}"` };
+        warehouseId = wh.id;
+        warehouseLabel = wh.name;
+      }
       const existing = ps.find((p) => p.sku.toLowerCase() === sku.toLowerCase());
       if (existing) {
-        return { sku, name: existing.name || name, quantity, cost, status: "existing", productId: existing.id };
+        return { ...base, name: existing.name || name, status: "existing", productId: existing.id, warehouseId, warehouseLabel };
       }
       if (!name) {
-        return { sku, name, quantity, cost, status: "invalid", reason: "Missing product name" };
+        return { ...base, status: "invalid", reason: "Missing product name" };
       }
-      return { sku, name, quantity, cost, status: "new" };
+      return { ...base, status: "new", warehouseId, warehouseLabel };
     });
   };
 
@@ -89,8 +106,8 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
   const downloadTemplate = async () => {
     const XLSX = await import("xlsx");
     const ws2 = XLSX.utils.json_to_sheet([
-      { sku: "SKU-001", name: "Sample Product A", quantity: 10, cost: 12.5 },
-      { sku: "SKU-002", name: "Sample Product B", quantity: 5, cost: 30 },
+      { sku: "SKU-001", name: "Sample Product A", quantity: 10, cost: 12.5, warehouse: ws[0]?.name ?? "Main Warehouse" },
+      { sku: "SKU-002", name: "Sample Product B", quantity: 5, cost: 30, warehouse: ws[1]?.name ?? ws[0]?.name ?? "Main Warehouse" },
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws2, "Stock");
@@ -130,7 +147,7 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
         companyId: activeCompanyId,
         date: today,
         productId,
-        warehouseId,
+        warehouseId: row.warehouseId ?? warehouseId,
         type: "purchase",
         quantity: row.quantity,
         unitCost: row.cost,
@@ -197,7 +214,9 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
 
         <p className="text-xs text-muted-foreground">
           Required columns: <code>SKU</code>, <code>Product Name</code> (or <code>Name</code>), <code>Quantity</code>, and <code>Cost</code>.
-          Products are matched by SKU — existing SKUs get a purchase (stock in) into this warehouse;
+          Optional column: <code>Warehouse</code> (name or code) — rows with it go to that warehouse, so one file can
+          stock several warehouses at once; rows without it go to the warehouse selected above.
+          Products are matched by SKU — existing SKUs get a purchase (stock in);
           new SKUs are created as new products.
         </p>
 
@@ -218,6 +237,7 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
                   <TableRow>
                     <TableHead>SKU</TableHead>
                     <TableHead>Product name</TableHead>
+                    <TableHead>Warehouse</TableHead>
                     <TableHead className="text-right">Quantity</TableHead>
                     <TableHead className="text-right">Cost</TableHead>
                     <TableHead>Status</TableHead>
@@ -234,6 +254,13 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
                             <div className="break-all font-mono text-xs text-muted-foreground">SKU: {r.sku}</div>
                           </>
                         ) : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="whitespace-normal break-words text-xs">
+                        {r.warehouseLabel ?? (
+                          <span className="text-muted-foreground">
+                            {ws.find((w) => w.id === warehouseId)?.name ?? "Selected warehouse"}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right font-mono">{r.quantity}</TableCell>
                       <TableCell className="text-right font-mono">{r.cost}</TableCell>
