@@ -64,17 +64,32 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
       const name = String(valueFor(r, ["name", "product name", "item name", "product description"])).trim();
       const quantity = Number(valueFor(r, ["quantity", "qty", "stock quantity"]) || 0);
       const cost = Number(valueFor(r, ["cost", "unit cost", "price", "unit price"]) || 0);
-      if (!sku) return { sku, name, quantity, cost, status: "invalid", reason: "Missing SKU" };
+      const warehouseRaw = String(
+        valueFor(r, ["warehouse", "warehouse name", "warehouse code", "destination"]),
+      ).trim();
+      const base = { sku, name, quantity, cost };
+      if (!sku) return { ...base, status: "invalid", reason: "Missing SKU" };
       if (!quantity || quantity <= 0)
-        return { sku, name, quantity, cost, status: "invalid", reason: "Invalid quantity" };
+        return { ...base, status: "invalid", reason: "Invalid quantity" };
+      let warehouseId: string | undefined;
+      let warehouseLabel: string | undefined;
+      if (warehouseRaw) {
+        const key = normalizeHeader(warehouseRaw);
+        const wh = ws.find(
+          (w) => normalizeHeader(w.name) === key || normalizeHeader(w.code) === key,
+        );
+        if (!wh) return { ...base, status: "invalid", reason: `Unknown warehouse "${warehouseRaw}"` };
+        warehouseId = wh.id;
+        warehouseLabel = wh.name;
+      }
       const existing = ps.find((p) => p.sku.toLowerCase() === sku.toLowerCase());
       if (existing) {
-        return { sku, name: existing.name || name, quantity, cost, status: "existing", productId: existing.id };
+        return { ...base, name: existing.name || name, status: "existing", productId: existing.id, warehouseId, warehouseLabel };
       }
       if (!name) {
-        return { sku, name, quantity, cost, status: "invalid", reason: "Missing product name" };
+        return { ...base, status: "invalid", reason: "Missing product name" };
       }
-      return { sku, name, quantity, cost, status: "new" };
+      return { ...base, status: "new", warehouseId, warehouseLabel };
     });
   };
 
