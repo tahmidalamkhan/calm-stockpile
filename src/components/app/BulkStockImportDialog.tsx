@@ -237,6 +237,7 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
                   <TableRow>
                     <TableHead>SKU</TableHead>
                     <TableHead>Product name</TableHead>
+                    <TableHead>Warehouse</TableHead>
                     <TableHead className="text-right">Quantity</TableHead>
                     <TableHead className="text-right">Cost</TableHead>
                     <TableHead>Status</TableHead>
