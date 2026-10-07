@@ -197,17 +197,43 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
       });
     }
 
-    await addStockMovements(movements);
-    toast.success(`Imported ${valid.length} row(s)`);
+    if (movements.length) await addStockMovements(movements);
+    toast.success(`Imported ${new Set(valid.map((r) => r.sku.toLowerCase())).size} product(s)`);
     setRows([]);
     setFileName("");
     setOpen(false);
   };
 
+  // One preview line per product, with a quantity per warehouse.
+  type Group = {
+    key: string; sku: string; name: string; cost: number;
+    status: Row["status"]; reason?: string; qty: Record<string, number>; total: number;
+  };
+  const groups: Group[] = [];
+  {
+    const map = new Map<string, Group>();
+    rows.forEach((r, i) => {
+      const key = r.status === "invalid" || !r.sku ? `invalid-${i}` : r.sku.toLowerCase();
+      let g = map.get(key);
+      if (!g) {
+        g = { key, sku: r.sku, name: r.name, cost: r.cost, status: r.status, reason: r.reason, qty: {}, total: 0 };
+        map.set(key, g);
+        groups.push(g);
+      }
+      if (r.quantity > 0) {
+        const wid = r.warehouseId ?? warehouseId;
+        g.qty[wid] = (g.qty[wid] ?? 0) + r.quantity;
+        g.total += r.quantity;
+      }
+    });
+  }
+  const usedWh = new Set(groups.flatMap((g) => Object.keys(g.qty)));
+  const previewWs = ws.filter((w) => usedWh.has(w.id));
+
   const summary = {
-    new: rows.filter((r) => r.status === "new").length,
-    existing: rows.filter((r) => r.status === "existing").length,
-    invalid: rows.filter((r) => r.status === "invalid").length,
+    new: groups.filter((g) => g.status === "new").length,
+    existing: groups.filter((g) => g.status === "existing").length,
+    invalid: groups.filter((g) => g.status === "invalid").length,
   };
 
   return (
