@@ -77,10 +77,16 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
       const cost = Number(valueFor(r, ["cost", "unit cost", "price", "unit price"]) || 0);
       const existing = sku ? ps.find((p) => p.sku.toLowerCase() === sku.toLowerCase()) : undefined;
 
-      const build = (quantity: number, warehouseId?: string, warehouseLabel?: string): Row => {
+      const build = (
+        quantity: number,
+        warehouseId?: string,
+        warehouseLabel?: string,
+        allowZero = false,
+      ): Row => {
         const base = { sku, name, quantity, cost, warehouseId, warehouseLabel };
         if (!sku) return { ...base, status: "invalid", reason: "Missing SKU" };
-        if (!quantity || quantity <= 0) return { ...base, status: "invalid", reason: "Invalid quantity" };
+        if (quantity < 0 || (!allowZero && !quantity))
+          return { ...base, status: "invalid", reason: "Invalid quantity" };
         if (existing) return { ...base, name: existing.name || name, status: "existing", productId: existing.id };
         if (!name) return { ...base, status: "invalid", reason: "Missing product name" };
         return { ...base, status: "new" };
@@ -94,7 +100,8 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
         if (out.length) return out;
         const fallbackQty = Number(valueFor(r, ["quantity", "qty", "stock quantity"]) || 0);
         if (!fallbackQty && !sku && !name) return [];
-        return [build(fallbackQty)];
+        // No stock in any warehouse: still create the product with zero quantity.
+        return [build(fallbackQty, undefined, undefined, true)];
       }
 
       const quantity = Number(valueFor(r, ["quantity", "qty", "stock quantity"]) || 0);
@@ -176,7 +183,7 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
           createdBySku.set(skuKey, created.id);
         }
       }
-      if (!productId) continue;
+      if (!productId || row.quantity <= 0) continue;
       movements.push({
         id: "",
         companyId: activeCompanyId,
@@ -190,17 +197,43 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
       });
     }
 
-    await addStockMovements(movements);
-    toast.success(`Imported ${valid.length} row(s)`);
+    if (movements.length) await addStockMovements(movements);
+    toast.success(`Imported ${new Set(valid.map((r) => r.sku.toLowerCase())).size} product(s)`);
     setRows([]);
     setFileName("");
     setOpen(false);
   };
 
+  // One preview line per product, with a quantity per warehouse.
+  type Group = {
+    key: string; sku: string; name: string; cost: number;
+    status: Row["status"]; reason?: string; qty: Record<string, number>; total: number;
+  };
+  const groups: Group[] = [];
+  {
+    const map = new Map<string, Group>();
+    rows.forEach((r, i) => {
+      const key = r.status === "invalid" || !r.sku ? `invalid-${i}` : r.sku.toLowerCase();
+      let g = map.get(key);
+      if (!g) {
+        g = { key, sku: r.sku, name: r.name, cost: r.cost, status: r.status, reason: r.reason, qty: {}, total: 0 };
+        map.set(key, g);
+        groups.push(g);
+      }
+      if (r.quantity > 0) {
+        const wid = r.warehouseId ?? warehouseId;
+        g.qty[wid] = (g.qty[wid] ?? 0) + r.quantity;
+        g.total += r.quantity;
+      }
+    });
+  }
+  const usedWh = new Set(groups.flatMap((g) => Object.keys(g.qty)));
+  const previewWs = ws.filter((w) => usedWh.has(w.id));
+
   const summary = {
-    new: rows.filter((r) => r.status === "new").length,
-    existing: rows.filter((r) => r.status === "existing").length,
-    invalid: rows.filter((r) => r.status === "invalid").length,
+    new: groups.filter((g) => g.status === "new").length,
+    existing: groups.filter((g) => g.status === "existing").length,
+    invalid: groups.filter((g) => g.status === "invalid").length,
   };
 
   return (
@@ -273,40 +306,40 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
                   <TableRow>
                     <TableHead>SKU</TableHead>
                     <TableHead>Product name</TableHead>
-                    <TableHead>Warehouse</TableHead>
-                    <TableHead className="text-right">Quantity</TableHead>
+                    {previewWs.map((w) => (
+                      <TableHead key={w.id} className="text-right">{w.name}</TableHead>
+                    ))}
+                    <TableHead className="text-right">Total qty</TableHead>
                     <TableHead className="text-right">Cost</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((r, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="whitespace-normal break-all font-mono text-xs">{r.sku || <span className="text-muted-foreground">—</span>}</TableCell>
+                  {groups.map((g) => (
+                    <TableRow key={g.key}>
+                      <TableCell className="whitespace-normal break-all font-mono text-xs">{g.sku || <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell className="min-w-56 whitespace-normal break-words">
-                        {r.name ? (
+                        {g.name ? (
                           <>
-                            <div className="font-medium">{r.name}</div>
-                            <div className="break-all font-mono text-xs text-muted-foreground">SKU: {r.sku}</div>
+                            <div className="font-medium">{g.name}</div>
+                            <div className="break-all font-mono text-xs text-muted-foreground">SKU: {g.sku}</div>
                           </>
                         ) : <span className="text-muted-foreground">—</span>}
                       </TableCell>
-                      <TableCell className="whitespace-normal break-words text-xs">
-                        {r.warehouseLabel ?? (
-                          <span className="text-muted-foreground">
-                            {ws.find((w) => w.id === warehouseId)?.name ?? "Selected warehouse"}
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">{r.quantity}</TableCell>
-                      <TableCell className="text-right font-mono">{r.cost}</TableCell>
+                      {previewWs.map((w) => (
+                        <TableCell key={w.id} className="text-right font-mono">
+                          {g.qty[w.id] ?? <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                      ))}
+                      <TableCell className="text-right font-mono">{g.total}</TableCell>
+                      <TableCell className="text-right font-mono">{g.cost}</TableCell>
                       <TableCell>
-                        {r.status === "invalid" ? (
-                          <span className="text-xs text-destructive">{r.reason}</span>
-                        ) : r.status === "new" ? (
-                          <span className="text-xs">New product</span>
+                        {g.status === "invalid" ? (
+                          <span className="text-xs text-destructive">{g.reason}</span>
+                        ) : g.status === "new" ? (
+                          <span className="text-xs">{g.total ? "New product" : "New product (0 stock)"}</span>
                         ) : (
-                          <span className="text-xs text-muted-foreground">Update existing</span>
+                          <span className="text-xs text-muted-foreground">{g.total ? "Update existing" : "No stock change"}</span>
                         )}
                       </TableCell>
                     </TableRow>
