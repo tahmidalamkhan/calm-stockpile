@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useCompany } from "@/lib/mock/store";
 import { formatDate, formatCurrency } from "@/lib/format";
-import { TransferStockDialog } from "@/components/app/TransferStockDialog";
+import { StockOutTransferDialog } from "@/components/app/StockOutTransferDialog";
 import { StockAdjustDialog } from "@/components/app/StockAdjustDialog";
 import { StockAdjustmentDialog } from "@/components/app/StockAdjustmentDialog";
 import { Button } from "@/components/ui/button";
@@ -145,9 +145,8 @@ function StockPage() {
         actions={
           <div className="flex flex-wrap gap-2">
             <StockAdjustDialog direction="in" />
-            <StockAdjustDialog direction="out" />
             <StockAdjustmentDialog />
-            <TransferStockDialog />
+            <StockOutTransferDialog />
           </div>
         }
       />
