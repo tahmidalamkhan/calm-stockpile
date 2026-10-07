@@ -306,40 +306,40 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
                   <TableRow>
                     <TableHead>SKU</TableHead>
                     <TableHead>Product name</TableHead>
-                    <TableHead>Warehouse</TableHead>
-                    <TableHead className="text-right">Quantity</TableHead>
+                    {previewWs.map((w) => (
+                      <TableHead key={w.id} className="text-right">{w.name}</TableHead>
+                    ))}
+                    <TableHead className="text-right">Total qty</TableHead>
                     <TableHead className="text-right">Cost</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((r, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="whitespace-normal break-all font-mono text-xs">{r.sku || <span className="text-muted-foreground">—</span>}</TableCell>
+                  {groups.map((g) => (
+                    <TableRow key={g.key}>
+                      <TableCell className="whitespace-normal break-all font-mono text-xs">{g.sku || <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell className="min-w-56 whitespace-normal break-words">
-                        {r.name ? (
+                        {g.name ? (
                           <>
-                            <div className="font-medium">{r.name}</div>
-                            <div className="break-all font-mono text-xs text-muted-foreground">SKU: {r.sku}</div>
+                            <div className="font-medium">{g.name}</div>
+                            <div className="break-all font-mono text-xs text-muted-foreground">SKU: {g.sku}</div>
                           </>
                         ) : <span className="text-muted-foreground">—</span>}
                       </TableCell>
-                      <TableCell className="whitespace-normal break-words text-xs">
-                        {r.warehouseLabel ?? (
-                          <span className="text-muted-foreground">
-                            {ws.find((w) => w.id === warehouseId)?.name ?? "Selected warehouse"}
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">{r.quantity}</TableCell>
-                      <TableCell className="text-right font-mono">{r.cost}</TableCell>
+                      {previewWs.map((w) => (
+                        <TableCell key={w.id} className="text-right font-mono">
+                          {g.qty[w.id] ?? <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                      ))}
+                      <TableCell className="text-right font-mono">{g.total}</TableCell>
+                      <TableCell className="text-right font-mono">{g.cost}</TableCell>
                       <TableCell>
-                        {r.status === "invalid" ? (
-                          <span className="text-xs text-destructive">{r.reason}</span>
-                        ) : r.status === "new" ? (
-                          <span className="text-xs">New product</span>
+                        {g.status === "invalid" ? (
+                          <span className="text-xs text-destructive">{g.reason}</span>
+                        ) : g.status === "new" ? (
+                          <span className="text-xs">{g.total ? "New product" : "New product (0 stock)"}</span>
                         ) : (
-                          <span className="text-xs text-muted-foreground">Update existing</span>
+                          <span className="text-xs text-muted-foreground">{g.total ? "Update existing" : "No stock change"}</span>
                         )}
                       </TableCell>
                     </TableRow>
