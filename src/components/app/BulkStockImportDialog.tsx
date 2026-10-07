@@ -106,8 +106,8 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
   const downloadTemplate = async () => {
     const XLSX = await import("xlsx");
     const ws2 = XLSX.utils.json_to_sheet([
-      { sku: "SKU-001", name: "Sample Product A", quantity: 10, cost: 12.5 },
-      { sku: "SKU-002", name: "Sample Product B", quantity: 5, cost: 30 },
+      { sku: "SKU-001", name: "Sample Product A", quantity: 10, cost: 12.5, warehouse: ws[0]?.name ?? "Main Warehouse" },
+      { sku: "SKU-002", name: "Sample Product B", quantity: 5, cost: 30, warehouse: ws[1]?.name ?? ws[0]?.name ?? "Main Warehouse" },
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws2, "Stock");
