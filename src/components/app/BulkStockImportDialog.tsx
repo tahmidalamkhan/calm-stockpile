@@ -77,10 +77,16 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
       const cost = Number(valueFor(r, ["cost", "unit cost", "price", "unit price"]) || 0);
       const existing = sku ? ps.find((p) => p.sku.toLowerCase() === sku.toLowerCase()) : undefined;
 
-      const build = (quantity: number, warehouseId?: string, warehouseLabel?: string): Row => {
+      const build = (
+        quantity: number,
+        warehouseId?: string,
+        warehouseLabel?: string,
+        allowZero = false,
+      ): Row => {
         const base = { sku, name, quantity, cost, warehouseId, warehouseLabel };
         if (!sku) return { ...base, status: "invalid", reason: "Missing SKU" };
-        if (!quantity || quantity <= 0) return { ...base, status: "invalid", reason: "Invalid quantity" };
+        if (quantity < 0 || (!allowZero && !quantity))
+          return { ...base, status: "invalid", reason: "Invalid quantity" };
         if (existing) return { ...base, name: existing.name || name, status: "existing", productId: existing.id };
         if (!name) return { ...base, status: "invalid", reason: "Missing product name" };
         return { ...base, status: "new" };
@@ -94,7 +100,8 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
         if (out.length) return out;
         const fallbackQty = Number(valueFor(r, ["quantity", "qty", "stock quantity"]) || 0);
         if (!fallbackQty && !sku && !name) return [];
-        return [build(fallbackQty)];
+        // No stock in any warehouse: still create the product with zero quantity.
+        return [build(fallbackQty, undefined, undefined, true)];
       }
 
       const quantity = Number(valueFor(r, ["quantity", "qty", "stock quantity"]) || 0);
@@ -176,7 +183,7 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
           createdBySku.set(skuKey, created.id);
         }
       }
-      if (!productId) continue;
+      if (!productId || row.quantity <= 0) continue;
       movements.push({
         id: "",
         companyId: activeCompanyId,
