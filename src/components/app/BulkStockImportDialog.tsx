@@ -255,6 +255,13 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
                           </>
                         ) : <span className="text-muted-foreground">—</span>}
                       </TableCell>
+                      <TableCell className="whitespace-normal break-words text-xs">
+                        {r.warehouseLabel ?? (
+                          <span className="text-muted-foreground">
+                            {ws.find((w) => w.id === warehouseId)?.name ?? "Selected warehouse"}
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right font-mono">{r.quantity}</TableCell>
                       <TableCell className="text-right font-mono">{r.cost}</TableCell>
                       <TableCell>
