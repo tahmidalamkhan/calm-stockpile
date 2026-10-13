@@ -119,15 +119,22 @@ function StockPage() {
     m.quantity > 0 ? `+${m.quantity}` : `${m.quantity}`;
 
 
-  const recentMovements = [...visibleMovements]
-    .sort((a, b) => {
-      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-      const aCreated = a.createdAt ?? "";
-      const bCreated = b.createdAt ?? "";
-      if (aCreated !== bCreated) return aCreated < bCreated ? 1 : -1;
-      return b.id.localeCompare(a.id);
-    })
-    .slice(0, 10);
+  const sortedMovements = [...visibleMovements].sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    const aCreated = a.createdAt ?? "";
+    const bCreated = b.createdAt ?? "";
+    if (aCreated !== bCreated) return aCreated < bCreated ? 1 : -1;
+    return b.id.localeCompare(a.id);
+  });
+
+  const PAGE_SIZE = 10;
+  const [page, setPage] = useState(0);
+  const totalPages = Math.max(1, Math.ceil(sortedMovements.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const recentMovements = sortedMovements.slice(
+    safePage * PAGE_SIZE,
+    safePage * PAGE_SIZE + PAGE_SIZE,
+  );
 
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -253,6 +260,36 @@ function StockPage() {
               })}
             </TableBody>
           </Table>
+          {sortedMovements.length > 0 && (
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Showing {safePage * PAGE_SIZE + 1}–
+                {Math.min((safePage + 1) * PAGE_SIZE, sortedMovements.length)} of{" "}
+                {sortedMovements.length} movements
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={safePage === 0}
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Page {safePage + 1} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={safePage >= totalPages - 1}
+                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
