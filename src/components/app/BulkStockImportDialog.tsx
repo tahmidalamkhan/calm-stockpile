@@ -54,6 +54,8 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
   const [rows, setRows] = React.useState<Row[]>([]);
   const [fileName, setFileName] = React.useState("");
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = React.useState(false);
+  const importingRef = React.useRef(false);
 
   React.useEffect(() => {
     if (initialWarehouseId) setWarehouseId(initialWarehouseId);
@@ -147,6 +149,18 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
   };
 
   const submit = async () => {
+    if (importingRef.current) return;
+    importingRef.current = true;
+    setImporting(true);
+    try {
+      await doSubmit();
+    } finally {
+      importingRef.current = false;
+      setImporting(false);
+    }
+  };
+
+  const doSubmit = async () => {
     if (!warehouseId) return toast.error("Pick a warehouse");
     const valid = rows.filter((r) => r.status !== "invalid");
     if (!valid.length) return toast.error("No valid rows to import");
@@ -351,8 +365,10 @@ export function BulkStockImportDialog({ initialWarehouseId }: { initialWarehouse
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={submit} disabled={rows.length === 0}>Import</Button>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={importing}>Cancel</Button>
+          <Button onClick={submit} disabled={rows.length === 0 || importing}>
+            {importing ? "Importing…" : "Import"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
