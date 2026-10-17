@@ -24,6 +24,7 @@ import {
 import { useCompany } from "@/lib/mock/store";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
 import { receiptCostSummary, weightedAverageCost } from "@/lib/inventory-cost";
+import { matchesProductSearch } from "@/lib/product-search";
 
 export const Route = createFileRoute("/stock-history")({
   head: () => ({
@@ -64,11 +65,7 @@ function StockHistoryPage() {
   );
 
   const filtered = React.useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return companyProducts;
-    return companyProducts.filter(
-      (p) => p.name.toLowerCase().startsWith(q) || p.sku.toLowerCase().startsWith(q),
-    );
+    return companyProducts.filter((p) => matchesProductSearch(p, query));
   }, [companyProducts, query]);
 
   const selectedProduct = selectedId

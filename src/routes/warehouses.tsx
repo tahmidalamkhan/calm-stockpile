@@ -25,6 +25,7 @@ import { formatCurrency } from "@/lib/format";
 import { exportRowsToXlsx } from "@/lib/export-xlsx";
 import { useAuth } from "@/hooks/use-auth";
 import { weightedAverageCost } from "@/lib/inventory-cost";
+import { matchesProductSearch } from "@/lib/product-search";
 
 export const Route = createFileRoute("/warehouses")({
   head: () => ({
@@ -78,13 +79,10 @@ function WarehousesPage() {
     if (sortDir === "desc") return arr.sort((a, b) => b.code.localeCompare(a.code));
     return arr;
   }, [list, sortDir]);
-  const q = query.trim().toLowerCase();
   const productsInWarehouse = ps
     .map((p) => ({ p, qty: qtyAt(p.id, selectedId) }))
     .filter((x) => x.qty > 0)
-    .filter(({ p }) =>
-      q ? p.name.toLowerCase().startsWith(q) || p.sku.toLowerCase().startsWith(q) : true,
-    );
+    .filter(({ p }) => matchesProductSearch(p, query));
 
   return (
     <>

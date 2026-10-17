@@ -22,6 +22,7 @@ import { useAuth } from "@/hooks/use-auth";
 import type { Product } from "@/lib/types";
 import { weightedAverageCost } from "@/lib/inventory-cost";
 import { toast } from "sonner";
+import { matchesProductSearch } from "@/lib/product-search";
 
 export const Route = createFileRoute("/products")({
   head: () => ({
@@ -68,12 +69,7 @@ function ProductsPage() {
   };
 
   const all = products.filter((p) => p.companyId === activeCompanyId);
-  const q = query.trim().toLowerCase();
-  const list = q
-    ? all.filter(
-        (p) => p.name.toLowerCase().startsWith(q) || p.sku.toLowerCase().startsWith(q),
-      )
-    : all;
+  const list = all.filter((p) => matchesProductSearch(p, query));
   const ws = warehouses.filter((w) => w.companyId === activeCompanyId);
 
   const qtyAt = (productId: string, warehouseId: string) =>
