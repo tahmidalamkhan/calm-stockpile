@@ -24,12 +24,17 @@ import {
 import { useCompany } from "@/lib/mock/store";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
 import { receiptCostSummary, weightedAverageCost } from "@/lib/inventory-cost";
+import { matchesProductSearch } from "@/lib/product-search";
 
 export const Route = createFileRoute("/stock-history")({
   head: () => ({
     meta: [
       { title: "Stock History — StockHub" },
       { name: "description", content: "Search a product and view its full stock movement history." },
+      { property: "og:title", content: "Stock History — StockHub" },
+      { property: "og:description", content: "Search a product and view its full stock movement history." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: StockHistoryPage,
@@ -64,11 +69,7 @@ function StockHistoryPage() {
   );
 
   const filtered = React.useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return companyProducts;
-    return companyProducts.filter(
-      (p) => p.name.toLowerCase().startsWith(q) || p.sku.toLowerCase().startsWith(q),
-    );
+    return companyProducts.filter((p) => matchesProductSearch(p, query));
   }, [companyProducts, query]);
 
   const selectedProduct = selectedId

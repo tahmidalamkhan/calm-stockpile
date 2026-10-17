@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { matchesSearchText } from "@/lib/product-search";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -56,7 +57,7 @@ export function ProductSearchSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-80 max-w-[calc(100vw-2rem)] p-0" align="start">
-        <Command>
+        <Command filter={(value, search) => matchesSearchText(value, search) ? 1 : 0}>
           <CommandInput placeholder="Search by name or SKU…" />
           <CommandList>
             <CommandEmpty>No product found.</CommandEmpty>
