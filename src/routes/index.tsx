@@ -17,7 +17,19 @@ import { Button } from "@/components/ui/button";
 import { useCompany } from "@/lib/mock/store";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
 
-export const Route = createFileRoute("/")({ component: Dashboard });
+export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Inventory Dashboard — StockHub" },
+      { name: "description", content: "Overview of StockHub inventory, warehouse stock, and recent movements." },
+      { property: "og:title", content: "Inventory Dashboard — StockHub" },
+      { property: "og:description", content: "Overview of StockHub inventory, warehouse stock, and recent movements." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: Dashboard,
+});
 
 function Dashboard() {
   const { role } = useAuth();

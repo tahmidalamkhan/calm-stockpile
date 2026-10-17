@@ -29,6 +29,10 @@ export const Route = createFileRoute("/stock")({
     meta: [
       { title: "Stock Control — StockHub" },
       { name: "description", content: "On-hand stock by warehouse and full movement history." },
+      { property: "og:title", content: "Stock Control — StockHub" },
+      { property: "og:description", content: "On-hand stock by warehouse and full movement history." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: StockPage,

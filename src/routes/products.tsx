@@ -29,6 +29,10 @@ export const Route = createFileRoute("/products")({
     meta: [
       { title: "Products — StockHub" },
       { name: "description", content: "Catalog of inventory products with cost, price, and on-hand quantity." },
+      { property: "og:title", content: "Products — StockHub" },
+      { property: "og:description", content: "Catalog of inventory products with cost, price, and on-hand quantity." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: ProductsPage,

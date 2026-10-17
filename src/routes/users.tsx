@@ -44,7 +44,19 @@ import {
 import { formatDate } from "@/lib/format";
 import { PendingApprovals } from "@/components/app/PendingApprovals";
 
-export const Route = createFileRoute("/users")({ component: UsersPage });
+export const Route = createFileRoute("/users")({
+  head: () => ({
+    meta: [
+      { title: "Users — StockHub" },
+      { name: "description", content: "Manage StockHub login accounts, approvals, and access levels." },
+      { property: "og:title", content: "Users — StockHub" },
+      { property: "og:description", content: "Manage StockHub login accounts, approvals, and access levels." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: UsersPage,
+});
 
 function UsersPage() {
   const { role, user, session } = useAuth();

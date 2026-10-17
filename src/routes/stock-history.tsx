@@ -31,6 +31,10 @@ export const Route = createFileRoute("/stock-history")({
     meta: [
       { title: "Stock History — StockHub" },
       { name: "description", content: "Search a product and view its full stock movement history." },
+      { property: "og:title", content: "Stock History — StockHub" },
+      { property: "og:description", content: "Search a product and view its full stock movement history." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: StockHistoryPage,

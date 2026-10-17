@@ -32,6 +32,10 @@ export const Route = createFileRoute("/warehouses")({
     meta: [
       { title: "Warehouses — StockHub" },
       { name: "description", content: "Manage warehouse locations and view products held in each." },
+      { property: "og:title", content: "Warehouses — StockHub" },
+      { property: "og:description", content: "Manage warehouse locations and view products held in each." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: WarehousesPage,
