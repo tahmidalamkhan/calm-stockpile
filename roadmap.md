@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Match product search keywords anywhere in names and SKUs across pages and stock windows
+
 - [x] Bulk Excel stock-in always counts as a purchase (new and existing SKUs, incl. past imports)
 - [x] Show cost breakdown on Stock History (units purchased, average, unpriced receipts)
 - [x] Classify legacy bulk-import adjustments as purchases without counting normal adjustments
