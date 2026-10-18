@@ -1,6 +1,6 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Pencil, Trash2 } from "lucide-react";
+import { Download, Pencil, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/app/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,8 @@ import type { Product } from "@/lib/types";
 import { weightedAverageCost } from "@/lib/inventory-cost";
 import { toast } from "sonner";
 import { matchesProductSearch } from "@/lib/product-search";
+import { buildProductReport } from "@/lib/product-report";
+import { exportRowsToPdf } from "@/lib/export-pdf";
 
 export const Route = createFileRoute("/products")({
   head: () => ({
@@ -64,6 +66,7 @@ function ProductsPage() {
   const [editing, setEditing] = React.useState<Product | null>(null);
   const [editMode, setEditMode] = React.useState(false);
   const [drafts, setDrafts] = React.useState<Record<string, string>>({});
+  const [exporting, setExporting] = React.useState(false);
 
   const savePrice = async (p: Product, raw: string) => {
     const next = Math.max(0, Number(raw));
@@ -97,6 +100,21 @@ function ProductsPage() {
   const totalUnitPrice = list.reduce((s, p) => s + averageCost(p), 0);
   const totalInventoryValue = list.reduce((s, p) => s + averageCost(p) * onHand(p.id), 0);
 
+  const handleExportPdf = async () => {
+    if (exporting || !role || list.length === 0) return;
+    setExporting(true);
+    try {
+      const { columns, rows } = buildProductReport(list, stockMovements, ws, role);
+      const date = new Date().toLocaleDateString("en-US");
+      const search = query.trim() ? ` | Search: ${query.trim()}` : "";
+      await exportRowsToPdf(columns, rows, "products-inventory.pdf", "Products Inventory Report", `${date} | ${list.length} products${search}`);
+    } catch {
+      toast.error("Could not export the PDF. Please try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
 
   return (
     <>
@@ -108,13 +126,19 @@ function ProductsPage() {
 
       <Card>
         <CardContent className="p-4">
-          <div className="mb-4 flex items-center justify-between gap-2">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
             <Input
               placeholder="Search SKU or name…"
               className="max-w-xs"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
+              <Button variant="outline" size="sm" disabled={exporting || !role || list.length === 0} onClick={handleExportPdf}>
+                <Download className="h-4 w-4" />
+                {exporting ? "Exporting…" : "Export PDF"}
+              </Button>
+            </div>
             {!isStaff && (
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" disabled={recalculating} onClick={runRecalculate}>

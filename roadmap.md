@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Add Products PDF export for filtered results with admin-only prices (nine tests pass; PDF skill visual QA found no clipping or overlap in admin/staff sample reports)
+- [ ] Verify Products PDF download with signed-in inventory — blocked by unavailable external-backend session; browser reaches sign-in screen
+
 - [x] Match product search keywords anywhere in names and SKUs across pages and stock windows (five matching tests pass)
 - [ ] Verify searches against signed-in inventory — blocked because the available preview session does not sign into the external backend
 
