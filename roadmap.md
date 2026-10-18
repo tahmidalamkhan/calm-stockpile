@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Add Products PDF export for filtered results with admin-only prices and verify report output
+
 - [x] Match product search keywords anywhere in names and SKUs across pages and stock windows (five matching tests pass)
 - [ ] Verify searches against signed-in inventory — blocked because the available preview session does not sign into the external backend
 
