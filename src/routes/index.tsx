@@ -1,5 +1,7 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
-import { Package, Boxes, Warehouse as WarehouseIcon, AlertTriangle, ArrowRight } from "lucide-react";
+import { Package, Boxes, Warehouse as WarehouseIcon, AlertTriangle, ArrowRight, HandCoins, Wallet } from "lucide-react";
+import { useFinance } from "@/components/app/FinanceLedger";
+import { kindTotal } from "@/lib/finance";
 import { PageHeader } from "@/components/app/PageHeader";
 import { StatCard } from "@/components/app/StatCard";
 import { useAuth } from "@/hooks/use-auth";
@@ -34,6 +36,7 @@ export const Route = createFileRoute("/")({
 function Dashboard() {
   const { role } = useAuth();
   const { activeCompanyId, activeCompany, products, warehouses, stockMovements } = useCompany();
+  const fin = useFinance();
   if (role && role !== "admin") return <Navigate to="/products" />;
 
   const ps = products.filter((p) => p.companyId === activeCompanyId);
@@ -109,6 +112,12 @@ function Dashboard() {
             trend={lowStock.length > 0 ? "down" : "up"}
             hint={lowStock.length > 0 ? "Need reordering" : "All levels healthy"}
           />
+        </Link>
+        <Link to="/receivables" className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg">
+          <StatCard title="Total receivable" value={formatCurrency(kindTotal("receivable", fin.parties, fin.entries))} icon={HandCoins} hint="Owed to you, incl. loans given" />
+        </Link>
+        <Link to="/payables" className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg">
+          <StatCard title="Total payable" value={formatCurrency(kindTotal("payable", fin.parties, fin.entries))} icon={Wallet} hint="You owe, incl. loans taken" />
         </Link>
       </div>
 

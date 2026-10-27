@@ -8,6 +8,8 @@ import {
   FileText,
   Users as UsersIcon,
   LogOut,
+  HandCoins,
+  Wallet,
 } from "lucide-react";
 import {
   Sidebar,
@@ -56,6 +58,13 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { title: "Stock Control", to: "/stock", icon: Boxes },
       { title: "Stock History", to: "/stock-history", icon: FileText },
       { title: "Warehouses", to: "/warehouses", icon: WarehouseIcon },
+    ],
+  },
+  {
+    label: "Finance",
+    items: [
+      { title: "Receivables", to: "/receivables", icon: HandCoins },
+      { title: "Payables", to: "/payables", icon: Wallet },
     ],
   },
   {
