@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PayablesRouteImport } from './routes/payables'
 import { Route as ProductsRouteImport } from './routes/products'
+import { Route as ReceivablesRouteImport } from './routes/receivables'
 import { Route as StockRouteImport } from './routes/stock'
 import { Route as StockHistoryRouteImport } from './routes/stock-history'
 import { Route as UsersRouteImport } from './routes/users'
@@ -21,9 +23,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PayablesRoute = PayablesRouteImport.update({
+  id: '/payables',
+  path: '/payables',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProductsRoute = ProductsRouteImport.update({
   id: '/products',
   path: '/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReceivablesRoute = ReceivablesRouteImport.update({
+  id: '/receivables',
+  path: '/receivables',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StockRoute = StockRouteImport.update({
@@ -49,7 +61,9 @@ const WarehousesRoute = WarehousesRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/payables': typeof PayablesRoute
   '/products': typeof ProductsRoute
+  '/receivables': typeof ReceivablesRoute
   '/stock': typeof StockRoute
   '/stock-history': typeof StockHistoryRoute
   '/users': typeof UsersRoute
@@ -57,7 +71,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/payables': typeof PayablesRoute
   '/products': typeof ProductsRoute
+  '/receivables': typeof ReceivablesRoute
   '/stock': typeof StockRoute
   '/stock-history': typeof StockHistoryRoute
   '/users': typeof UsersRoute
@@ -66,7 +82,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/payables': typeof PayablesRoute
   '/products': typeof ProductsRoute
+  '/receivables': typeof ReceivablesRoute
   '/stock': typeof StockRoute
   '/stock-history': typeof StockHistoryRoute
   '/users': typeof UsersRoute
@@ -75,13 +93,30 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/products' | '/stock' | '/stock-history' | '/users' | '/warehouses'
+    | '/'
+    | '/payables'
+    | '/products'
+    | '/receivables'
+    | '/stock'
+    | '/stock-history'
+    | '/users'
+    | '/warehouses'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/products' | '/stock' | '/stock-history' | '/users' | '/warehouses'
+  to:
+    | '/'
+    | '/payables'
+    | '/products'
+    | '/receivables'
+    | '/stock'
+    | '/stock-history'
+    | '/users'
+    | '/warehouses'
   id:
     | '__root__'
     | '/'
+    | '/payables'
     | '/products'
+    | '/receivables'
     | '/stock'
     | '/stock-history'
     | '/users'
@@ -90,7 +125,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PayablesRoute: typeof PayablesRoute
   ProductsRoute: typeof ProductsRoute
+  ReceivablesRoute: typeof ReceivablesRoute
   StockRoute: typeof StockRoute
   StockHistoryRoute: typeof StockHistoryRoute
   UsersRoute: typeof UsersRoute
@@ -106,11 +143,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/payables': {
+      id: '/payables'
+      path: '/payables'
+      fullPath: '/payables'
+      preLoaderRoute: typeof PayablesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/products': {
       id: '/products'
       path: '/products'
       fullPath: '/products'
       preLoaderRoute: typeof ProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/receivables': {
+      id: '/receivables'
+      path: '/receivables'
+      fullPath: '/receivables'
+      preLoaderRoute: typeof ReceivablesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/stock': {
@@ -146,7 +197,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PayablesRoute: PayablesRoute,
   ProductsRoute: ProductsRoute,
+  ReceivablesRoute: ReceivablesRoute,
   StockRoute: StockRoute,
   StockHistoryRoute: StockHistoryRoute,
   UsersRoute: UsersRoute,

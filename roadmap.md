@@ -15,3 +15,5 @@
 - [x] Read product names from common Excel header formats during bulk import
 - [x] Bulk Excel import can stock multiple warehouses at once (side-by-side warehouse columns, all warehouses matched)
 - [x] Combined Stock Out & Transfer window on Stock Control
+- [x] Accounts Receivable/Payable with PO-wise payments, discount, VAT/tax, loans; admin dashboard totals
+- [ ] Run supabase-sql/03_finance.sql in the external database — blocked: needs user to run it in their SQL editor
