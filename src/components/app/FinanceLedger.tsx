@@ -67,6 +67,14 @@ export function FinanceLedger({ kind }: { kind: FinanceKind }) {
   const title = isAR ? "Accounts Receivable" : "Accounts Payable";
   const list = parties.filter((p) => p.kind === kind && matchesSearchText(p.name, q));
   const party = parties.find((p) => p.id === selected) ?? null;
+  const removeParty = async (id: string, name: string) => {
+    if (!confirm(`Delete ${name} and all their bills, loans and payments? This cannot be undone.`)) return;
+    const { error } = await db.from("finance_parties").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success(`${name} deleted`);
+    setSelected(null);
+    void reload();
+  };
 
   if (error) {
     return (
@@ -186,14 +194,15 @@ export function FinanceLedger({ kind }: { kind: FinanceKind }) {
         </CardHeader>
         <CardContent>
           <Table>
-            <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Phone</TableHead><TableHead className="text-right">Balance</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Phone</TableHead><TableHead className="text-right">Balance</TableHead>{role === "admin" && <TableHead />}</TableRow></TableHeader>
             <TableBody>
-              {list.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">None yet</TableCell></TableRow>}
+              {list.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">None yet</TableCell></TableRow>}
               {list.map((p) => (
                 <TableRow key={p.id} className="cursor-pointer" onClick={() => setSelected(p.id)}>
                   <TableCell className="font-medium">{p.name}</TableCell>
                   <TableCell>{p.phone || "—"}</TableCell>
                   <TableCell className="text-right font-medium">{formatCurrency(partyBalance(p.id, entries))}</TableCell>
+                  {role === "admin" && <TableCell className="w-10"><Button size="icon" variant="ghost" aria-label={`Delete ${p.name}`} onClick={(e) => { e.stopPropagation(); void removeParty(p.id, p.name); }}><Trash2 className="h-4 w-4" /></Button></TableCell>}
                 </TableRow>
               ))}
             </TableBody>
