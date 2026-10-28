@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Add multiple manual product lines per AR/AP bill, calculated totals, readable legacy entries and PO payment labels
+- [ ] Verify multi-product accounting save and payment with signed-in access — external-backend session required
+
 - [x] Add Products PDF export for filtered results with admin-only prices (nine tests pass; PDF skill visual QA found no clipping or overlap in admin/staff sample reports)
 - [ ] Verify Products PDF download with signed-in inventory — blocked by unavailable external-backend session; browser reaches sign-in screen
 
@@ -16,4 +19,4 @@
 - [x] Bulk Excel import can stock multiple warehouses at once (side-by-side warehouse columns, all warehouses matched)
 - [x] Combined Stock Out & Transfer window on Stock Control
 - [x] Accounts Receivable/Payable with PO-wise payments, discount, VAT/tax, loans; admin dashboard totals
-- [ ] Run supabase-sql/03_finance.sql in the external database — blocked: needs user to run it in their SQL editor
+- [x] Accounts tables confirmed present in the external database

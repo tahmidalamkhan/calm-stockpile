@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { openBalance, partyBalance, kindTotal, type FinanceEntry } from "./finance";
+import { openBalance, partyBalance, kindTotal, billTotal, itemTotal, validBillItems, encodeBillItems, decodeBillItems, billProductLabel, type FinanceEntry } from "./finance";
 
 const e = (o: Partial<FinanceEntry>): FinanceEntry => ({
   id: "x", party_id: "p1", entry_type: "invoice", parent_id: null, po_number: null,
@@ -29,4 +29,32 @@ test("totals only count parties of that kind", () => {
   ];
   assert.equal(kindTotal("receivable", parties, entries), 2500);
   assert.equal(kindTotal("payable", parties, entries), 0);
+});
+
+const items = [{ name: "Motor", quantity: 2, unitPrice: 100 }, { name: "Wheel", quantity: 3, unitPrice: 50 }];
+test("multiple manual products calculate a single PO total", () => {
+  assert.equal(billTotal(items), 350);
+  assert.equal(itemTotal({ name: "Part", quantity: 3, unitPrice: 0.1 }), 0.3);
+});
+test("multi-product bills round-trip through the existing field", () => {
+  assert.deepEqual(decodeBillItems(encodeBillItems(items)), items);
+  assert.equal(billProductLabel(encodeBillItems(items)), "Motor, Wheel");
+});
+test("legacy single-product entries remain readable", () => {
+  assert.equal(decodeBillItems("Original motor"), null);
+  assert.equal(billProductLabel("Original motor"), "Original motor");
+  assert.equal(decodeBillItems('{"type":"stockhub-bill-items","version":1,"items":[null]}'), null);
+});
+test("incomplete or invalid product lines cannot be saved", () => {
+  for (const bad of [[], [{ name: "", quantity: 1, unitPrice: 50 }], [{ name: "Part", quantity: 0, unitPrice: 50 }], [{ name: "Part", quantity: 1, unitPrice: -1 }], [{ name: "Part", quantity: NaN, unitPrice: 50 }], [{ name: "Part", quantity: 1, unitPrice: Infinity }]]) {
+    assert.equal(validBillItems(bad), false);
+    assert.throws(() => encodeBillItems(bad));
+  }
+});
+test("settlements reduce the complete multi-product PO without affecting another PO", () => {
+  const bill = e({ id: "multi", amount: billTotal(items), product_name: encodeBillItems(items) });
+  const other = e({ id: "other", amount: 100 });
+  const payment = e({ entry_type: "payment", parent_id: "multi", amount: 200, discount: 25, tax: 25 });
+  assert.equal(openBalance(bill, [bill, other, payment]), 100);
+  assert.equal(openBalance(other, [bill, other, payment]), 100);
 });
