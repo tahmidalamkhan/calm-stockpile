@@ -21,7 +21,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { matchesSearchText } from "@/lib/product-search";
 import {
-  openBalance, partyBalance, settledBy,
+  openBalance, partyBalance, settledBy, billTotal, itemTotal, validBillItems,
+  encodeBillItems, decodeBillItems, billProductLabel,
   type FinanceEntry, type FinanceKind, type FinanceParty,
 } from "@/lib/finance";
 
@@ -118,7 +119,14 @@ export function FinanceLedger({ kind }: { kind: FinanceKind }) {
                     <TableCell>{formatDate(c.date)}</TableCell>
                     <TableCell><Badge variant={c.entry_type === "loan" ? "secondary" : "outline"} className="capitalize">{c.entry_type === "invoice" ? "Bill" : "Loan"}</Badge></TableCell>
                     <TableCell>{c.po_number || "—"}</TableCell>
-                    <TableCell>{c.product_name || "—"}</TableCell>
+                    <TableCell className="min-w-48 whitespace-normal">
+                      {decodeBillItems(c.product_name)?.map((item, index) => (
+                        <div key={index} className="mb-2 last:mb-0">
+                          <div className="font-medium break-words">{item.name}</div>
+                          <div className="text-xs text-muted-foreground">{item.quantity} × {formatCurrency(item.unitPrice)} = {formatCurrency(itemTotal(item))}</div>
+                        </div>
+                      )) ?? (c.product_name || "—")}
+                    </TableCell>
                     <TableCell className="text-right">{formatCurrency(c.amount)}</TableCell>
                     <TableCell className="text-right font-medium">{formatCurrency(openBalance(c, own))}</TableCell>
                     {role === "admin" && <TableCell><Button size="icon" variant="ghost" onClick={() => remove(c.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>}
@@ -232,24 +240,36 @@ function ChargeDialog({ open, onOpenChange, partyId, onSaved }: DlgProps & { par
   const [type, setType] = React.useState<"invoice" | "loan">("invoice");
   const [po, setPo] = React.useState("");
   const [date, setDate] = React.useState(today());
-  const [product, setProduct] = React.useState("");
+  const newLine = () => ({ id: crypto.randomUUID(), name: "", quantity: "1", unitPrice: "" });
+  const [lines, setLines] = React.useState(() => [newLine()]);
   const [amount, setAmount] = React.useState("");
   const [note, setNote] = React.useState("");
   const [busy, setBusy] = React.useState(false);
+  const saving = React.useRef(false);
+  const items = lines.map((line) => ({ name: line.name, quantity: num(line.quantity), unitPrice: num(line.unitPrice) }));
+  const total = type === "invoice" ? billTotal(items) : num(amount);
+  const invalid = !date || (type === "invoice" ? !validBillItems(items) : !Number.isFinite(total) || total <= 0);
+  const updateLine = (id: string, field: "name" | "quantity" | "unitPrice", value: string) =>
+    setLines((previous) => previous.map((line) => line.id === id ? { ...line, [field]: value } : line));
   const save = async () => {
-    if (num(amount) <= 0 || busy) return;
+    if (invalid || saving.current) return;
+    saving.current = true;
     setBusy(true);
-    const { error } = await db.from("finance_entries").insert({
-      party_id: partyId, entry_type: type, po_number: po.trim() || null, date,
-      product_name: product.trim() || null, amount: num(amount), note: note.trim() || null,
-    });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    setPo(""); setProduct(""); setAmount(""); setNote(""); onOpenChange(false); await onSaved();
+    try {
+      const { error } = await db.from("finance_entries").insert({
+        party_id: partyId, entry_type: type, po_number: po.trim() || null, date,
+        product_name: type === "invoice" ? encodeBillItems(items) : null,
+        amount: total, note: note.trim() || null,
+      });
+      if (error) throw error;
+      setPo(""); setLines([newLine()]); setAmount(""); setNote(""); onOpenChange(false); await onSaved();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save this entry.");
+    } finally { saving.current = false; setBusy(false); }
   };
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={(value) => { if (!busy) onOpenChange(value); }}>
+      <DialogContent className="max-h-[90dvh] w-[calc(100%-2rem)] overflow-y-auto sm:max-w-3xl">
         <DialogHeader><DialogTitle>Add amount</DialogTitle></DialogHeader>
         <div className="grid gap-3 sm:grid-cols-2">
           <div><Label>Type</Label>
@@ -260,11 +280,25 @@ function ChargeDialog({ open, onOpenChange, partyId, onSaved }: DlgProps & { par
           </div>
           <div><Label>Date</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
           <div><Label>PO number</Label><Input value={po} onChange={(e) => setPo(e.target.value)} /></div>
-          <div><Label>Amount</Label><Input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
-          <div className="sm:col-span-2"><Label>Product name</Label><Input value={product} onChange={(e) => setProduct(e.target.value)} placeholder="Typed manually, not linked to stock" /></div>
+          {type === "loan" && <div><Label>Amount</Label><Input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>}
+          {type === "invoice" && <div className="sm:col-span-2 space-y-3">
+            <div className="flex items-center justify-between"><Label>Products</Label>
+              <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => setLines((previous) => [...previous, newLine()])}><Plus className="mr-1 h-4 w-4" />Add product</Button>
+            </div>
+            {lines.map((line, index) => (
+              <div key={line.id} className="grid grid-cols-2 gap-2 border-b pb-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2.5rem] sm:items-end">
+                <div className="col-span-2 min-w-0 sm:col-span-1"><Label htmlFor={`name-${line.id}`}>Product name</Label><Input id={`name-${line.id}`} aria-label={`Product name ${index + 1}`} value={line.name} disabled={busy} onChange={(e) => updateLine(line.id, "name", e.target.value)} /></div>
+                <div className="min-w-0"><Label htmlFor={`qty-${line.id}`}>Quantity</Label><Input id={`qty-${line.id}`} aria-label={`Quantity ${index + 1}`} inputMode="decimal" value={line.quantity} disabled={busy} onChange={(e) => updateLine(line.id, "quantity", e.target.value)} /></div>
+                <div className="min-w-0"><Label htmlFor={`price-${line.id}`}>Unit price</Label><Input id={`price-${line.id}`} aria-label={`Unit price ${index + 1}`} inputMode="decimal" value={line.unitPrice} disabled={busy} onChange={(e) => updateLine(line.id, "unitPrice", e.target.value)} /></div>
+                <div className="min-w-0"><Label>Total</Label><div className="flex min-h-9 items-center break-all text-sm font-medium">{Number.isFinite(itemTotal(items[index])) ? formatCurrency(itemTotal(items[index])) : "—"}</div></div>
+                <Button type="button" size="icon" variant="ghost" className="justify-self-end" aria-label={`Remove product ${index + 1}`} title="Remove product" disabled={busy || lines.length === 1} onClick={() => setLines((previous) => previous.filter((item) => item.id !== line.id))}><Trash2 className="h-4 w-4" /></Button>
+              </div>
+            ))}
+            <div className="flex justify-between gap-4 font-semibold"><span>Bill total</span><span>{Number.isFinite(total) ? formatCurrency(total) : "—"}</span></div>
+          </div>}
           <div className="sm:col-span-2"><Label>Note</Label><Input value={note} onChange={(e) => setNote(e.target.value)} /></div>
         </div>
-        <DialogFooter><Button onClick={save} disabled={busy || num(amount) <= 0}>{busy ? "Saving…" : "Save"}</Button></DialogFooter>
+        <DialogFooter><Button onClick={save} disabled={busy || invalid}>{busy ? "Saving…" : "Save"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -305,7 +339,7 @@ function PaymentDialog({ open, onOpenChange, partyId, charges, onSaved, title }:
               <SelectContent>
                 {charges.map(({ c, due }) => (
                   <SelectItem key={c.id} value={c.id}>
-                    {(c.po_number || (c.entry_type === "loan" ? "Loan" : "Bill"))} · {formatDate(c.date)}{c.product_name ? ` · ${c.product_name}` : ""} — due {formatCurrency(due)}
+                    {(c.po_number || (c.entry_type === "loan" ? "Loan" : "Bill"))} · {formatDate(c.date)}{c.product_name ? ` · ${billProductLabel(c.product_name)}` : ""} — due {formatCurrency(due)}
                   </SelectItem>
                 ))}
               </SelectContent>
