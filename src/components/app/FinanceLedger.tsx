@@ -108,6 +108,7 @@ export function FinanceLedger({ kind }: { kind: FinanceKind }) {
               <Button variant="outline" onClick={() => setSelected(null)}><ArrowLeft className="mr-1 h-4 w-4" />Back</Button>
               <Button variant="outline" onClick={() => setChargeOpen(true)}><Plus className="mr-1 h-4 w-4" />Add amount / loan</Button>
               <Button onClick={() => setPayOpen(true)}>{isAR ? "Receive payment" : "Make payment"}</Button>
+              {role === "admin" && <Button variant="outline" aria-label="Delete" onClick={() => removeParty(party.id, party.name)}><Trash2 className="mr-1 h-4 w-4" />Delete</Button>}
             </div>
           }
         />
