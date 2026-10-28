@@ -1,7 +1,7 @@
 # Roadmap
 
-- [ ] Add multiple manual product lines per AR/AP bill, calculated totals, readable legacy entries and PO payment labels
-- [ ] Verify multi-product accounting save and payment with signed-in access — external-backend session required
+- [x] Add multiple manual product lines per AR/AP bill, calculated totals, readable legacy entries and PO payment labels (eight finance tests pass)
+- [ ] Verify multi-product accounting save and payment with signed-in access — blocked: preview reaches external-backend sign-in; available managed session belongs to a different backend
 
 - [x] Add Products PDF export for filtered results with admin-only prices (nine tests pass; PDF skill visual QA found no clipping or overlap in admin/staff sample reports)
 - [ ] Verify Products PDF download with signed-in inventory — blocked by unavailable external-backend session; browser reaches sign-in screen
