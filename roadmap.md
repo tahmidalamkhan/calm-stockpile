@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Add admin-controlled AR/AP recipient visibility and enforce no staff bottom balance totals
+
 - [x] Add multiple manual product lines per AR/AP bill, calculated totals, readable legacy entries and PO payment labels (eight finance tests pass)
 - [ ] Verify multi-product accounting save and payment with signed-in access — blocked: preview reaches external-backend sign-in; available managed session belongs to a different backend
 
