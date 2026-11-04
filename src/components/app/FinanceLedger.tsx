@@ -1,6 +1,6 @@
 import * as React from "react";
 import { toast } from "sonner";
-import { Plus, ArrowLeft, Trash2 } from "lucide-react";
+import { Plus, ArrowLeft, Trash2, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/custom-client";
 import { PageHeader } from "@/components/app/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -23,6 +24,7 @@ import { matchesSearchText } from "@/lib/product-search";
 import {
   openBalance, partyBalance, settledBy, billTotal, itemTotal, validBillItems,
   encodeBillItems, decodeBillItems, billProductLabel,
+  financePartyPrivacy, encodeFinancePartyPrivacy, canViewFinanceParty, canViewFinanceTotals,
   type FinanceEntry, type FinanceKind, type FinanceParty,
 } from "@/lib/finance";
 
@@ -32,41 +34,64 @@ const today = () => new Date().toISOString().slice(0, 10);
 const num = (v: string) => (v.trim() === "" ? 0 : Number(v));
 
 export function useFinance() {
+  const { role, user } = useAuth();
   const [parties, setParties] = React.useState<FinanceParty[]>([]);
   const [entries, setEntries] = React.useState<FinanceEntry[]>([]);
   const [error, setError] = React.useState<string | null>(null);
+  const [privacyReady, setPrivacyReady] = React.useState(false);
   const load = React.useCallback(async () => {
-    const [p, e] = await Promise.all([
+    if (!user || !role) { setParties([]); setEntries([]); setPrivacyReady(false); return; }
+    const [p, e, privacy] = await Promise.all([
       db.from("finance_parties").select("*").order("name"),
       db.from("finance_entries").select("*").order("date").order("created_at"),
+      db.rpc("finance_privacy_ready"),
     ]);
     if (p.error || e.error) {
       setError((p.error ?? e.error).message);
       return;
     }
     setError(null);
+    setPrivacyReady(!privacy.error && privacy.data === true);
     setParties(p.data ?? []);
     setEntries((e.data ?? []).map((r: FinanceEntry) => ({
       ...r, amount: Number(r.amount), discount: Number(r.discount), tax: Number(r.tax),
     })));
-  }, []);
+  }, [user?.id, role]);
   React.useEffect(() => { void load(); }, [load]);
-  return { parties, entries, error, reload: load };
+  const visibleParties = parties.filter((p) => canViewFinanceParty(p, role));
+  const visibleIds = new Set(visibleParties.map((p) => p.id));
+  return { parties: visibleParties, entries: entries.filter((e) => visibleIds.has(e.party_id)), privacyReady, error, reload: load };
 }
 
 export function FinanceLedger({ kind }: { kind: FinanceKind }) {
   const { role } = useAuth();
-  const { parties, entries, error, reload } = useFinance();
+  const { parties, entries, privacyReady, error, reload } = useFinance();
   const [selected, setSelected] = React.useState<string | null>(null);
   const [q, setQ] = React.useState("");
   const [partyOpen, setPartyOpen] = React.useState(false);
   const [chargeOpen, setChargeOpen] = React.useState(false);
   const [payOpen, setPayOpen] = React.useState(false);
+  const [visibilityBusy, setVisibilityBusy] = React.useState<string | null>(null);
+  const visibilitySaving = React.useRef(false);
 
   const isAR = kind === "receivable";
   const title = isAR ? "Accounts Receivable" : "Accounts Payable";
   const list = parties.filter((p) => p.kind === kind && matchesSearchText(p.name, q));
-  const party = parties.find((p) => p.id === selected) ?? null;
+  const party = parties.find((p) => p.id === selected && p.kind === kind) ?? null;
+  const toggleVisibility = async (recipient: FinanceParty) => {
+    if (role !== "admin" || !privacyReady || visibilitySaving.current) return;
+    visibilitySaving.current = true;
+    setVisibilityBusy(recipient.id);
+    const hidden = !financePartyPrivacy(recipient.notes).hiddenFromStaff;
+    try {
+      const { error } = await db.rpc("set_finance_party_visibility", { party: recipient.id, hidden });
+      if (error) throw error;
+      await reload();
+      toast.success(hidden ? "Recipient hidden from staff" : "Recipient visible to staff");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update recipient visibility.");
+    } finally { visibilitySaving.current = false; setVisibilityBusy(null); }
+  };
   const removeParty = async (id: string, name: string) => {
     if (!confirm(`Delete ${name} and all their bills, loans and payments? This cannot be undone.`)) return;
     const { error } = await db.from("finance_parties").delete().eq("id", id);
@@ -109,9 +134,14 @@ export function FinanceLedger({ kind }: { kind: FinanceKind }) {
               <Button variant="outline" onClick={() => setChargeOpen(true)}><Plus className="mr-1 h-4 w-4" />Add amount / loan</Button>
               <Button onClick={() => setPayOpen(true)}>{isAR ? "Receive payment" : "Make payment"}</Button>
               {role === "admin" && <Button variant="outline" aria-label="Delete" onClick={() => removeParty(party.id, party.name)}><Trash2 className="mr-1 h-4 w-4" />Delete</Button>}
+              {role === "admin" && <Button variant="outline" disabled={!privacyReady || visibilityBusy !== null} onClick={() => void toggleVisibility(party)}>
+                {financePartyPrivacy(party.notes).hiddenFromStaff ? <Eye className="mr-1 h-4 w-4" /> : <EyeOff className="mr-1 h-4 w-4" />}
+                {financePartyPrivacy(party.notes).hiddenFromStaff ? "Show to staff" : "Hide from staff"}
+              </Button>}
             </div>
           }
         />
+        {role === "admin" && financePartyPrivacy(party.notes).hiddenFromStaff && <Badge variant="secondary" className="mb-4">Hidden from staff</Badge>}
         <Card className="mb-6">
           <CardHeader><CardTitle className="text-base">Bills & loans</CardTitle></CardHeader>
           <CardContent>
@@ -188,6 +218,7 @@ export function FinanceLedger({ kind }: { kind: FinanceKind }) {
         description={isAR ? "People and companies who owe you, including loans you gave." : "People and companies you owe, including loans you took."}
         actions={<Button onClick={() => setPartyOpen(true)}><Plus className="mr-1 h-4 w-4" />Add {isAR ? "customer" : "vendor"}</Button>}
       />
+      {role === "admin" && !privacyReady && <p className="mb-4 text-sm text-muted-foreground">Recipient privacy needs a one-time database update. Run supabase-sql/04_finance_privacy.sql on your connected database to enable these controls.</p>}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-4">
           <CardTitle className="text-base">{list.length} {isAR ? "customers" : "vendors"}</CardTitle>
@@ -200,37 +231,44 @@ export function FinanceLedger({ kind }: { kind: FinanceKind }) {
               {list.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">None yet</TableCell></TableRow>}
               {list.map((p) => (
                 <TableRow key={p.id} className="cursor-pointer" onClick={() => setSelected(p.id)}>
-                  <TableCell className="font-medium">{p.name}</TableCell>
+                  <TableCell className="font-medium">{p.name}{role === "admin" && financePartyPrivacy(p.notes).hiddenFromStaff && <Badge variant="secondary" className="ml-2">Hidden from staff</Badge>}</TableCell>
                   <TableCell>{p.phone || "—"}</TableCell>
                   <TableCell className="text-right font-medium">{formatCurrency(partyBalance(p.id, entries))}</TableCell>
-                  {role === "admin" && <TableCell className="w-10"><Button size="icon" variant="ghost" aria-label={`Delete ${p.name}`} onClick={(e) => { e.stopPropagation(); void removeParty(p.id, p.name); }}><Trash2 className="h-4 w-4" /></Button></TableCell>}
+                  {role === "admin" && <TableCell><div className="flex justify-end gap-1">
+                    <Button size="icon" variant="ghost" disabled={!privacyReady || visibilityBusy !== null} title={financePartyPrivacy(p.notes).hiddenFromStaff ? "Show to staff" : "Hide from staff"} aria-label={`${financePartyPrivacy(p.notes).hiddenFromStaff ? "Show to staff" : "Hide from staff"}: ${p.name}`} onClick={(e) => { e.stopPropagation(); void toggleVisibility(p); }}>{financePartyPrivacy(p.notes).hiddenFromStaff ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}</Button>
+                    <Button size="icon" variant="ghost" aria-label={`Delete ${p.name}`} onClick={(e) => { e.stopPropagation(); void removeParty(p.id, p.name); }}><Trash2 className="h-4 w-4" /></Button>
+                  </div></TableCell>}
                 </TableRow>
               ))}
             </TableBody>
-            {role === "admin" && list.length > 0 && (
+            {canViewFinanceTotals(role) && list.length > 0 && (
               <TableFooter><TableRow><TableCell colSpan={2}>Total</TableCell><TableCell className="text-right">{formatCurrency(total)}</TableCell></TableRow></TableFooter>
             )}
           </Table>
         </CardContent>
       </Card>
-      <PartyDialog open={partyOpen} onOpenChange={setPartyOpen} kind={kind} onSaved={reload} />
+      <PartyDialog open={partyOpen} onOpenChange={setPartyOpen} kind={kind} onSaved={reload} privacyReady={privacyReady} />
     </>
   );
 }
 
 type DlgProps = { open: boolean; onOpenChange: (o: boolean) => void; onSaved: () => void | Promise<void> };
 
-function PartyDialog({ open, onOpenChange, kind, onSaved }: DlgProps & { kind: FinanceKind }) {
+function PartyDialog({ open, onOpenChange, kind, onSaved, privacyReady }: DlgProps & { kind: FinanceKind; privacyReady: boolean }) {
+  const { role } = useAuth();
   const [name, setName] = React.useState("");
   const [phone, setPhone] = React.useState("");
+  const [hidden, setHidden] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const save = async () => {
     if (!name.trim() || busy) return;
     setBusy(true);
-    const { error } = await db.from("finance_parties").insert({ kind, name: name.trim(), phone: phone.trim() || null });
+    if (hidden && role === "admin" && !privacyReady) { setBusy(false); return; }
+    const { error } = await db.from("finance_parties").insert({ kind, name: name.trim(), phone: phone.trim() || null,
+      notes: role === "admin" && hidden ? encodeFinancePartyPrivacy(null, true) : null });
     setBusy(false);
     if (error) return toast.error(error.message);
-    setName(""); setPhone(""); onOpenChange(false); await onSaved();
+    setName(""); setPhone(""); setHidden(false); onOpenChange(false); await onSaved();
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -239,6 +277,7 @@ function PartyDialog({ open, onOpenChange, kind, onSaved }: DlgProps & { kind: F
         <div className="space-y-3">
           <div><Label>Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
           <div><Label>Phone (optional)</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+          {role === "admin" && <div className="flex items-center gap-2"><Checkbox id="hide-recipient" checked={hidden} disabled={!privacyReady || busy} onCheckedChange={(value) => setHidden(value === true)} /><Label htmlFor="hide-recipient">Hide from staff account</Label></div>}
         </div>
         <DialogFooter><Button onClick={save} disabled={busy || !name.trim()}>{busy ? "Saving…" : "Save"}</Button></DialogFooter>
       </DialogContent>
