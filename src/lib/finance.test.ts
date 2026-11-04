@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { openBalance, partyBalance, kindTotal, billTotal, itemTotal, validBillItems, encodeBillItems, decodeBillItems, billProductLabel, type FinanceEntry } from "./finance";
+import { openBalance, partyBalance, kindTotal, billTotal, itemTotal, validBillItems, encodeBillItems, decodeBillItems, billProductLabel, encodeFinancePartyPrivacy, financePartyPrivacy, canViewFinanceParty, canViewFinanceTotals, type FinanceEntry } from "./finance";
 
 const e = (o: Partial<FinanceEntry>): FinanceEntry => ({
   id: "x", party_id: "p1", entry_type: "invoice", parent_id: null, po_number: null,
@@ -32,6 +32,26 @@ test("totals only count parties of that kind", () => {
 });
 
 const items = [{ name: "Motor", quantity: 2, unitPrice: 100 }, { name: "Wheel", quantity: 3, unitPrice: 50 }];
+test("hidden AR customers and AP vendors are visible only to admins", () => {
+  for (const kind of ["receivable", "payable"] as const) {
+    const party = { id: "private", name: "Private recipient", kind, notes: encodeFinancePartyPrivacy("Existing note", true) };
+    assert.equal(canViewFinanceParty(party, "admin"), true);
+    assert.equal(canViewFinanceParty(party, "staff"), false);
+    assert.equal(canViewFinanceParty(party, null), false);
+    assert.equal(canViewFinanceParty({ ...party, notes: encodeFinancePartyPrivacy(party.notes, false) }, "staff"), true);
+    assert.equal(financePartyPrivacy(party.notes).notes, "Existing note");
+  }
+});
+test("legacy notes stay visible to staff and malformed privacy payloads fail closed", () => {
+  assert.deepEqual(financePartyPrivacy("Call next week"), { hiddenFromStaff: false, notes: "Call next week" });
+  assert.equal(financePartyPrivacy("stockhub-finance-privacy-v1:broken").hiddenFromStaff, true);
+  assert.equal(financePartyPrivacy('stockhub-finance-privacy-v1:{"hiddenFromStaff":"false"}').hiddenFromStaff, true);
+});
+test("staff never receive bottom aggregate balance totals", () => {
+  assert.equal(canViewFinanceTotals("staff"), false);
+  assert.equal(canViewFinanceTotals(null), false);
+  assert.equal(canViewFinanceTotals("admin"), true);
+});
 test("multiple manual products calculate a single PO total", () => {
   assert.equal(billTotal(items), 350);
   assert.equal(itemTotal({ name: "Part", quantity: 3, unitPrice: 0.1 }), 0.3);

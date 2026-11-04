@@ -4,6 +4,10 @@ Run these files in your Supabase project's **SQL Editor**, in order:
 
 1. **01_schema.sql** — enums, helper functions, all tables, indexes and triggers.
 2. **02_rls.sql** — grants and row-level-security policies.
+3. **03_finance.sql** — receivables, payables, bills, loans and payments.
+4. **04_finance_privacy.sql** — admin-controlled recipient visibility; protects hidden recipients and their entries from staff access.
+
+For an existing installation with finance tables, run only **04_finance_privacy.sql** on the same external database the app uses. The privacy controls stay disabled until this update is installed. Existing plain-text notes and recipients remain unchanged and visible; admins can then hide individual customers or vendors.
 
 ## What gets created
 

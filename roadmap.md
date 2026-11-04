@@ -1,5 +1,9 @@
 # Roadmap
 
+- [x] Add admin-controlled AR/AP recipient visibility controls and no staff bottom balance totals (11 finance tests pass; build OK)
+- [ ] Enable recipient privacy on the external database — blocked: the migration tool targets Lovable Cloud, not the app's external database; run supabase-sql/04_finance_privacy.sql there
+- [ ] Verify hidden recipients with real admin/staff accounts — blocked: no authenticated external-backend session; both account pages reach sign-in
+
 - [x] Add multiple manual product lines per AR/AP bill, calculated totals, readable legacy entries and PO payment labels (eight finance tests pass)
 - [ ] Verify multi-product accounting save and payment with signed-in access — blocked: preview reaches external-backend sign-in; available managed session belongs to a different backend
 

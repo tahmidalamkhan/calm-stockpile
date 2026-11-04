@@ -1,6 +1,22 @@
 // Browser-safe AR/AP ledger math (no inventory link).
 export type FinanceKind = "receivable" | "payable";
-export type FinanceParty = { id: string; kind: FinanceKind; name: string; phone?: string | null };
+export type FinanceParty = { id: string; kind: FinanceKind; name: string; phone?: string | null; notes?: string | null };
+
+const privacyPrefix = "stockhub-finance-privacy-v1:";
+export function financePartyPrivacy(notes?: string | null): { hiddenFromStaff: boolean; notes: string | null } {
+  if (!notes?.startsWith(privacyPrefix)) return { hiddenFromStaff: false, notes: notes ?? null };
+  try {
+    const payload = JSON.parse(notes.slice(privacyPrefix.length));
+    // Malformed marked payloads fail closed, matching the database predicate.
+    return { hiddenFromStaff: payload?.hiddenFromStaff !== false, notes: typeof payload?.notes === "string" ? payload.notes : null };
+  } catch { return { hiddenFromStaff: true, notes: null }; }
+}
+export function encodeFinancePartyPrivacy(notes: string | null | undefined, hiddenFromStaff: boolean): string {
+  return privacyPrefix + JSON.stringify({ hiddenFromStaff, notes: financePartyPrivacy(notes).notes });
+}
+export const canViewFinanceParty = (party: FinanceParty, role: string | null) =>
+  role === "admin" || (role === "staff" && !financePartyPrivacy(party.notes).hiddenFromStaff);
+export const canViewFinanceTotals = (role: string | null) => role === "admin";
 export type FinanceItem = { name: string; quantity: number; unitPrice: number };
 
 export const itemTotal = (item: FinanceItem) => Math.round(item.quantity * item.unitPrice * 100) / 100;
