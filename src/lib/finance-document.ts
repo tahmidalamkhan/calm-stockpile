@@ -1,4 +1,4 @@
-import { billProductLabel, decodeBillItems, itemTotal, settledBy, canViewFinanceParty, type FinanceEntry, type FinanceParty } from "./finance";
+import { billProductLabel, decodeBillItems, itemTotal, settledBy, canViewFinanceParty, isReturnEntry, returnLabel, type FinanceEntry, type FinanceParty } from "./finance";
 
 export const invoiceShops = [
   { id: "scale-house", name: "SCALE HOUSE", address: "261 BANGSHAL ROAD DHAKA", phone: "+880 1764-523321" },
@@ -23,14 +23,16 @@ export function buildFinanceInvoice(party: FinanceParty, entries: FinanceEntry[]
   if (index < 0) throw new Error("Select a bill or loan for this recipient.");
   const bill = own[index];
   const previousBalance = money(own.slice(0, index).reduce((sum, entry) => sum + change(entry), 0));
-  const payments = own.filter((entry) => entry.entry_type === "payment" && entry.parent_id === bill.id);
+  const settlements = own.filter((entry) => entry.entry_type === "payment" && entry.parent_id === bill.id);
+  const payments = settlements.filter((e) => !isReturnEntry(e));
+  const returned = money(settlements.filter(isReturnEntry).reduce((sum, entry) => sum + settledBy(entry), 0));
   const paid = money(payments.reduce((sum, entry) => sum + Number(entry.amount), 0));
   const discount = money(payments.reduce((sum, entry) => sum + Number(entry.discount), 0));
   const tax = money(payments.reduce((sum, entry) => sum + Number(entry.tax), 0));
   const subtotal = Number(bill.amount);
   const totalDue = money(previousBalance + subtotal);
-  return { bill, items: decodeBillItems(bill.product_name), previousBalance, subtotal, totalDue, paid, discount, tax,
-    outstanding: money(totalDue - paid - discount - tax) };
+  return { bill, items: decodeBillItems(bill.product_name), previousBalance, subtotal, totalDue, paid, discount, tax, returned,
+    outstanding: money(totalDue - paid - discount - tax - returned) };
 }
 
 export function buildFinanceStatement(party: FinanceParty, entries: FinanceEntry[], role: string | null) {
@@ -40,13 +42,16 @@ export function buildFinanceStatement(party: FinanceParty, entries: FinanceEntry
   const rows = own.map((entry) => {
     balance = money(balance + change(entry));
     const parent = own.find((item) => item.id === entry.parent_id);
+    const isReturn = isReturnEntry(entry);
+    const isPay = entry.entry_type === "payment" && !isReturn;
     const details = decodeBillItems(entry.product_name)?.map((item) => `${item.name} — ${item.quantity} × ${item.unitPrice.toFixed(2)} = ${itemTotal(item).toFixed(2)}`).join("\n") ?? billProductLabel(entry.product_name);
     return { entry, reference: entry.po_number || parent?.po_number || "—",
-      description: entry.entry_type === "payment" ? "Payment" : entry.entry_type === "loan" ? "Loan" : details || "Bill",
+      description: isReturn ? `Goods return\n${returnLabel(entry.product_name)}` : isPay ? "Payment" : entry.entry_type === "loan" ? "Loan" : details || "Bill",
       charge: entry.entry_type === "payment" ? 0 : Number(entry.amount),
-      paid: entry.entry_type === "payment" ? Number(entry.amount) : 0,
-      discount: entry.entry_type === "payment" ? Number(entry.discount) : 0,
-      tax: entry.entry_type === "payment" ? Number(entry.tax) : 0, balance };
+      paid: isPay ? Number(entry.amount) : 0,
+      returned: isReturn ? settledBy(entry) : 0,
+      discount: isPay ? Number(entry.discount) : 0,
+      tax: isPay ? Number(entry.tax) : 0, balance };
   });
   return { rows, balance };
 }

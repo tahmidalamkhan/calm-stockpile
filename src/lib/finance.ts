@@ -51,6 +51,31 @@ export function decodeBillItems(value: string | null): FinanceItem[] | null {
 export function billProductLabel(value: string | null): string {
   return decodeBillItems(value)?.map((item) => item.name).join(", ") ?? value ?? "";
 }
+/** Goods returns are stored as settlement entries carrying a versioned return payload. */
+export type ReturnItem = FinanceItem & { lineIndex: number };
+export function encodeReturnItems(items: ReturnItem[]): string {
+  const valid = items.filter((i) => i.quantity > 0);
+  if (!valid.length || !valid.every((i) => Number.isFinite(i.quantity) && i.unitPrice >= 0)) throw new Error("Enter a returned quantity for at least one item.");
+  return JSON.stringify({ type: "stockhub-return-items", version: 1, items: valid });
+}
+export function decodeReturnItems(value: string | null): ReturnItem[] | null {
+  if (!value) return null;
+  try {
+    const data = JSON.parse(value);
+    return data?.type === "stockhub-return-items" && data.version === 1 && Array.isArray(data.items) ? data.items : null;
+  } catch { return null; }
+}
+export const isReturnEntry = (e: { entry_type: string; product_name: string | null }) =>
+  e.entry_type === "payment" && decodeReturnItems(e.product_name) !== null;
+/** Units of each bill line already returned. */
+export function returnedQuantities(billId: string, entries: FinanceEntry[]): Record<number, number> {
+  const out: Record<number, number> = {};
+  for (const e of entries) if (e.parent_id === billId) for (const i of decodeReturnItems(e.product_name) ?? []) out[i.lineIndex] = (out[i.lineIndex] ?? 0) + i.quantity;
+  return out;
+}
+export const returnLabel = (value: string | null) =>
+  (decodeReturnItems(value) ?? []).map((i) => `${i.name} — ${i.quantity} × ${i.unitPrice.toFixed(2)} = ${itemTotal(i).toFixed(2)}`).join("\n");
+
 export type FinanceEntry = {
   id: string;
   party_id: string;
