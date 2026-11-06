@@ -28,7 +28,7 @@ export async function createFinanceDocumentPdf(party: FinanceParty, entries: Fin
     autoTable(doc, { head: [["Product / Description", "Qty", "Unit price", "Total"]], body, startY, margin: 40, styles, theme: "grid", columnStyles: { 0: { cellWidth: 270 }, 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } } });
     const lastY = (doc as typeof doc & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? startY;
     autoTable(doc, { startY: lastY + 16, margin: { left: 220, right: 40 }, theme: "plain", styles,
-      body: [["Current bill subtotal", formatCurrency(invoice.subtotal)], ["Previous balance at issue", formatCurrency(invoice.previousBalance)], ["Total due at issue", formatCurrency(invoice.totalDue)], ["Paid against this bill", formatCurrency(invoice.paid)], ["Discount against this bill", formatCurrency(invoice.discount)], ["VAT / Tax against this bill", formatCurrency(invoice.tax)], ["Outstanding incl. previous balance", formatCurrency(invoice.outstanding)]], columnStyles: { 1: { halign: "right" } } });
+      body: [["Current bill subtotal", formatCurrency(invoice.subtotal)], ["Previous balance at issue", formatCurrency(invoice.previousBalance)], ["Total due at issue", formatCurrency(invoice.totalDue)], ["Paid against this bill", formatCurrency(invoice.paid)], ["Discount against this bill", formatCurrency(invoice.discount)], ["VAT / Tax against this bill", formatCurrency(invoice.tax)], ["Goods returned against this bill", formatCurrency(invoice.returned)], ["Outstanding incl. previous balance", formatCurrency(invoice.outstanding)]], columnStyles: { 1: { halign: "right" } } });
     let y = ((doc as typeof doc & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? lastY) + 24;
     const notes = ["Previous balance is calculated before this bill; deductions above apply only to this bill.", invoice.bill.note].filter((value): value is string => Boolean(value));
     const lines = doc.splitTextToSize(notes.join("\n"), width - 80);
@@ -38,10 +38,10 @@ export async function createFinanceDocumentPdf(party: FinanceParty, entries: Fin
     doc.line(40, y, 220, y); doc.line(width - 220, y, width - 40, y);
     doc.text("Authorized signature / seal", 40, y + 14); doc.text("Receiver signature", width - 220, y + 14);
   } else if (statement) {
-    autoTable(doc, { head: [["Date / PO", "Description", "Charges", "Paid", "Discount", "VAT / Tax", "Balance"]],
-      body: statement.rows.map((row) => [`${formatDate(row.entry.date)}\n${row.reference}`, `${row.description}${row.entry.note ? `\n${row.entry.note}` : ""}`, formatCurrency(row.charge), formatCurrency(row.paid), formatCurrency(row.discount), formatCurrency(row.tax), formatCurrency(row.balance)]),
-      foot: [["Closing balance", "", "", "", "", "", formatCurrency(statement.balance)]], showFoot: "lastPage", startY, margin: 40, styles: { ...styles, fontSize: 7, cellPadding: 4 }, theme: "grid",
-      columnStyles: { 0: { cellWidth: 68 }, 1: { cellWidth: 145 }, 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" } } });
+    autoTable(doc, { head: [["Date / PO", "Description", "Charges", "Paid", "Returned", "Discount", "VAT / Tax", "Balance"]],
+      body: statement.rows.map((row) => [`${formatDate(row.entry.date)}\n${row.reference}`, `${row.description}${row.entry.note ? `\n${row.entry.note}` : ""}`, formatCurrency(row.charge), formatCurrency(row.paid), formatCurrency(row.returned), formatCurrency(row.discount), formatCurrency(row.tax), formatCurrency(row.balance)]),
+      foot: [["Closing balance", "", "", "", "", "", "", formatCurrency(statement.balance)]], showFoot: "lastPage", startY, margin: 40, styles: { ...styles, fontSize: 7, cellPadding: 4 }, theme: "grid",
+      columnStyles: { 0: { cellWidth: 68 }, 1: { cellWidth: 125 }, 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" }, 7: { halign: "right" } } });
   }
   const pages = doc.getNumberOfPages();
   for (let page = 1; page <= pages; page++) {
