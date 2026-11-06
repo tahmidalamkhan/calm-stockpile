@@ -1,6 +1,6 @@
 import * as React from "react";
 import { toast } from "sonner";
-import { Plus, ArrowLeft, Trash2, Eye, EyeOff, FileText } from "lucide-react";
+import { Plus, ArrowLeft, Trash2, Eye, EyeOff, FileText, Undo2 } from "lucide-react";
 import { FinanceDocumentDialog } from "@/components/app/FinanceDocumentDialog";
 import { supabase } from "@/integrations/supabase/custom-client";
 import { PageHeader } from "@/components/app/PageHeader";
@@ -25,6 +25,7 @@ import { matchesSearchText } from "@/lib/product-search";
 import {
   openBalance, partyBalance, settledBy, billTotal, itemTotal, validBillItems,
   encodeBillItems, decodeBillItems, billProductLabel,
+  encodeReturnItems, isReturnEntry, returnLabel, returnedQuantities,
   financePartyPrivacy, encodeFinancePartyPrivacy, canViewFinanceParty, canViewFinanceTotals,
   type FinanceEntry, type FinanceKind, type FinanceParty,
 } from "@/lib/finance";
@@ -136,6 +137,7 @@ export function FinanceLedger({ kind }: { kind: FinanceKind }) {
               <Button variant="outline" onClick={() => setSelected(null)}><ArrowLeft className="mr-1 h-4 w-4" />Back</Button>
               <Button variant="outline" onClick={() => { setDocumentBillId(null); setDocumentOpen(true); }}><FileText className="mr-1 h-4 w-4" />Invoice / Statement</Button>
               <Button variant="outline" onClick={() => setChargeOpen(true)}><Plus className="mr-1 h-4 w-4" />Add amount / loan</Button>
+              <Button variant="outline" onClick={() => setReturnOpen(true)}><Undo2 className="mr-1 h-4 w-4" />Return goods</Button>
               <Button onClick={() => setPayOpen(true)}>{isAR ? "Receive payment" : "Make payment"}</Button>
               {role === "admin" && <Button variant="outline" aria-label="Delete" onClick={() => removeParty(party.id, party.name)}><Trash2 className="mr-1 h-4 w-4" />Delete</Button>}
               {role === "admin" && <Button variant="outline" disabled={!privacyReady || visibilityBusy !== null} onClick={() => void toggleVisibility(party)}>
@@ -181,11 +183,11 @@ export function FinanceLedger({ kind }: { kind: FinanceKind }) {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle className="text-base">Payments</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">Payments & returns</CardTitle></CardHeader>
           <CardContent>
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Date</TableHead><TableHead>Against PO</TableHead><TableHead className="text-right">Paid</TableHead>
+                <TableHead>Date</TableHead><TableHead>Against PO</TableHead><TableHead className="text-right">Paid / returned</TableHead>
                 <TableHead className="text-right">Discount</TableHead><TableHead className="text-right">VAT / Tax</TableHead>
                 <TableHead className="text-right">Total cleared</TableHead><TableHead>Note</TableHead>{role === "admin" && <TableHead />}
               </TableRow></TableHeader>
@@ -199,7 +201,7 @@ export function FinanceLedger({ kind }: { kind: FinanceKind }) {
                     <TableCell className="text-right">{formatCurrency(p.discount)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(p.tax)}</TableCell>
                     <TableCell className="text-right font-medium">{formatCurrency(settledBy(p))}</TableCell>
-                    <TableCell>{p.note || "—"}</TableCell>
+                    <TableCell className="whitespace-pre-line">{isReturnEntry(p) ? <><Badge variant="secondary" className="mb-1">Goods return</Badge>{"\n"}{returnLabel(p.product_name)}{p.note ? `\n${p.note}` : ""}</> : (p.note || "—")}</TableCell>
                     {role === "admin" && <TableCell><Button size="icon" variant="ghost" onClick={() => remove(p.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>}
                   </TableRow>
                 ))}
@@ -209,6 +211,9 @@ export function FinanceLedger({ kind }: { kind: FinanceKind }) {
         </Card>
         <ChargeDialog open={chargeOpen} onOpenChange={setChargeOpen} partyId={party.id} onSaved={reload} />
         <FinanceDocumentDialog open={documentOpen} onOpenChange={setDocumentOpen} party={party} entries={own} role={role} initialBillId={documentBillId} />
+        <ReturnDialog open={returnOpen} onOpenChange={setReturnOpen} partyId={party.id}
+          charges={charges.filter((c) => decodeBillItems(c.product_name)).map((c) => ({ c, due: openBalance(c, own), returned: returnedQuantities(c.id, own) }))}
+          onSaved={reload} />
         <PaymentDialog open={payOpen} onOpenChange={setPayOpen} partyId={party.id}
           charges={charges.map((c) => ({ c, due: openBalance(c, own) })).filter((x) => x.due > 0)}
           onSaved={reload} title={isAR ? "Receive payment" : "Make payment"} />
@@ -411,6 +416,81 @@ function PaymentDialog({ open, onOpenChange, partyId, charges, onSaved, title }:
           </p>
         </div>
         <DialogFooter><Button onClick={save} disabled={busy || invalid}>{busy ? "Saving…" : "Save payment"}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ReturnDialog({ open, onOpenChange, partyId, charges, onSaved }: DlgProps & {
+  partyId: string; charges: { c: FinanceEntry; due: number; returned: Record<number, number> }[];
+}) {
+  const [chargeId, setChargeId] = React.useState("");
+  const [date, setDate] = React.useState(today());
+  const [qty, setQty] = React.useState<Record<number, string>>({});
+  const [note, setNote] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+  const sel = charges.find((x) => x.c.id === chargeId);
+  const items = sel ? decodeBillItems(sel.c.product_name) ?? [] : [];
+  const lines = items.map((item, lineIndex) => ({ ...item, lineIndex, left: item.quantity - (sel?.returned[lineIndex] ?? 0), q: num(qty[lineIndex] ?? "") }));
+  const total = Math.round(lines.reduce((s, l) => s + (l.q > 0 ? l.q * l.unitPrice : 0), 0) * 100) / 100;
+  const badLine = lines.some((l) => Number.isNaN(l.q) || l.q < 0 || l.q > l.left + 1e-9);
+  const invalid = !sel || total <= 0 || badLine || total > (sel?.due ?? 0) + 0.001;
+  const save = async () => {
+    if (invalid || busy || !sel) return;
+    setBusy(true);
+    try {
+      const payload = encodeReturnItems(lines.filter((l) => l.q > 0).map((l) => ({ name: l.name, quantity: l.q, unitPrice: l.unitPrice, lineIndex: l.lineIndex })));
+      const { error } = await db.from("finance_entries").insert({
+        party_id: partyId, entry_type: "payment", parent_id: chargeId, date, product_name: payload,
+        amount: total, discount: 0, tax: 0, note: note.trim() || null,
+      });
+      if (error) throw error;
+      setChargeId(""); setQty({}); setNote(""); onOpenChange(false); await onSaved();
+    } catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
+  };
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader><DialogTitle>Return goods</DialogTitle></DialogHeader>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="sm:col-span-2"><Label>Bill / PO</Label>
+            <Select value={chargeId} onValueChange={(v) => { setChargeId(v); setQty({}); }}>
+              <SelectTrigger><SelectValue placeholder={charges.length ? "Select bill" : "No bills with items"} /></SelectTrigger>
+              <SelectContent>
+                {charges.map(({ c, due }) => (
+                  <SelectItem key={c.id} value={c.id}>{c.po_number || "Bill"} · {formatDate(c.date)} · {billProductLabel(c.product_name)} — due {formatCurrency(due)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {sel && (
+            <div className="sm:col-span-2">
+              <Table>
+                <TableHeader><TableRow><TableHead>Item</TableHead><TableHead className="text-right">Sold</TableHead><TableHead className="text-right">Can return</TableHead><TableHead className="text-right">Unit price</TableHead><TableHead className="w-28">Return qty</TableHead><TableHead className="text-right">Credit</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {lines.map((l) => (
+                    <TableRow key={l.lineIndex}>
+                      <TableCell className="whitespace-normal">{l.name}</TableCell>
+                      <TableCell className="text-right">{l.quantity}</TableCell>
+                      <TableCell className="text-right">{l.left}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(l.unitPrice)}</TableCell>
+                      <TableCell><Input inputMode="decimal" aria-label={`Return quantity for ${l.name}`} disabled={l.left <= 0} value={qty[l.lineIndex] ?? ""} onChange={(e) => setQty({ ...qty, [l.lineIndex]: e.target.value })} className={l.q > l.left || l.q < 0 ? "border-destructive" : ""} /></TableCell>
+                      <TableCell className="text-right">{formatCurrency(l.q > 0 ? l.q * l.unitPrice : 0)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          <div><Label>Date</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+          <div><Label>Note</Label><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. defective" /></div>
+          {sel && <p className="text-sm text-muted-foreground sm:col-span-2">
+            Return credit {formatCurrency(total)} · bill due {formatCurrency(sel.due)} · remaining {formatCurrency(Math.max(0, sel.due - total))}
+            {badLine && <span className="text-destructive"> — return quantity is more than what can be returned</span>}
+            {!badLine && total > sel.due + 0.001 && <span className="text-destructive"> — more than what is due on this bill</span>}
+          </p>}
+        </div>
+        <DialogFooter><Button onClick={save} disabled={busy || invalid}>{busy ? "Saving…" : "Save return"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
