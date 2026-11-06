@@ -41,4 +41,14 @@ test("legacy product names and same-day saved ordering remain readable", () => {
   const sameDay = [entry("first", "2026-11-01", 120), entry("second", "2026-11-01", 50, { product_name: "Legacy item" })];
   assert.equal(buildFinanceInvoice(party, sameDay, "second", "admin").previousBalance, 120);
   assert.equal(buildFinanceStatement(party, sameDay, "admin").rows[1].description, "Legacy item");
+});test("goods returns reduce the bill by returned qty × original price and show separately", async () => {
+  const { encodeReturnItems, returnedQuantities, openBalance } = await import("./finance");
+  const ret = entry("ret", "2026-11-04", 100, { entry_type: "payment", parent_id: "bill", product_name: encodeReturnItems([{ name: "Motor", quantity: 1, unitPrice: 100, lineIndex: 0 }]) });
+  const all = [...entries, ret];
+  assert.equal(openBalance(all.find((e) => e.id === "bill")!, all), 100);
+  assert.deepEqual(returnedQuantities("bill", all), { 0: 1 });
+  const inv = buildFinanceInvoice(party, all, "bill", "admin");
+  assert.equal(inv.returned, 100); assert.equal(inv.paid, 100);
+  const row = buildFinanceStatement(party, all, "admin").rows.find((r) => r.entry.id === "ret")!;
+  assert.equal(row.returned, 100); assert.equal(row.paid, 0);
 });

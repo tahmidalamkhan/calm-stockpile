@@ -73,6 +73,7 @@ export function FinanceLedger({ kind }: { kind: FinanceKind }) {
   const [partyOpen, setPartyOpen] = React.useState(false);
   const [chargeOpen, setChargeOpen] = React.useState(false);
   const [payOpen, setPayOpen] = React.useState(false);
+  const [returnOpen, setReturnOpen] = React.useState(false);
   const [documentOpen, setDocumentOpen] = React.useState(false);
   const [documentBillId, setDocumentBillId] = React.useState<string | null>(null);
   const [visibilityBusy, setVisibilityBusy] = React.useState<string | null>(null);
