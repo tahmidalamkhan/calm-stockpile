@@ -1,6 +1,7 @@
 import * as React from "react";
 import { toast } from "sonner";
-import { Plus, ArrowLeft, Trash2, Eye, EyeOff } from "lucide-react";
+import { Plus, ArrowLeft, Trash2, Eye, EyeOff, FileText } from "lucide-react";
+import { FinanceDocumentDialog } from "@/components/app/FinanceDocumentDialog";
 import { supabase } from "@/integrations/supabase/custom-client";
 import { PageHeader } from "@/components/app/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,6 +72,8 @@ export function FinanceLedger({ kind }: { kind: FinanceKind }) {
   const [partyOpen, setPartyOpen] = React.useState(false);
   const [chargeOpen, setChargeOpen] = React.useState(false);
   const [payOpen, setPayOpen] = React.useState(false);
+  const [documentOpen, setDocumentOpen] = React.useState(false);
+  const [documentBillId, setDocumentBillId] = React.useState<string | null>(null);
   const [visibilityBusy, setVisibilityBusy] = React.useState<string | null>(null);
   const visibilitySaving = React.useRef(false);
 
@@ -129,8 +132,9 @@ export function FinanceLedger({ kind }: { kind: FinanceKind }) {
           title={party.name}
           description={`${isAR ? "Receivable" : "Payable"} balance: ${formatCurrency(partyBalance(party.id, entries))}`}
           actions={
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => setSelected(null)}><ArrowLeft className="mr-1 h-4 w-4" />Back</Button>
+              <Button variant="outline" onClick={() => { setDocumentBillId(null); setDocumentOpen(true); }}><FileText className="mr-1 h-4 w-4" />Invoice / Statement</Button>
               <Button variant="outline" onClick={() => setChargeOpen(true)}><Plus className="mr-1 h-4 w-4" />Add amount / loan</Button>
               <Button onClick={() => setPayOpen(true)}>{isAR ? "Receive payment" : "Make payment"}</Button>
               {role === "admin" && <Button variant="outline" aria-label="Delete" onClick={() => removeParty(party.id, party.name)}><Trash2 className="mr-1 h-4 w-4" />Delete</Button>}
@@ -149,10 +153,10 @@ export function FinanceLedger({ kind }: { kind: FinanceKind }) {
               <TableHeader><TableRow>
                 <TableHead>Date</TableHead><TableHead>Type</TableHead><TableHead>PO number</TableHead>
                 <TableHead>Product</TableHead><TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-right">Due</TableHead>{role === "admin" && <TableHead />}
+                <TableHead className="text-right">Due</TableHead><TableHead>Invoice</TableHead>{role === "admin" && <TableHead />}
               </TableRow></TableHeader>
               <TableBody>
-                {charges.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No entries yet</TableCell></TableRow>}
+                {charges.length === 0 && <TableRow><TableCell colSpan={role === "admin" ? 8 : 7} className="text-center text-muted-foreground">No entries yet</TableCell></TableRow>}
                 {charges.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell>{formatDate(c.date)}</TableCell>
@@ -168,6 +172,7 @@ export function FinanceLedger({ kind }: { kind: FinanceKind }) {
                     </TableCell>
                     <TableCell className="text-right">{formatCurrency(c.amount)}</TableCell>
                     <TableCell className="text-right font-medium">{formatCurrency(openBalance(c, own))}</TableCell>
+                    <TableCell><Button size="icon" variant="ghost" title="Generate invoice" aria-label={`Generate invoice for ${c.po_number || c.id}`} onClick={() => { setDocumentBillId(c.id); setDocumentOpen(true); }}><FileText className="h-4 w-4" /></Button></TableCell>
                     {role === "admin" && <TableCell><Button size="icon" variant="ghost" onClick={() => remove(c.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>}
                   </TableRow>
                 ))}
@@ -203,6 +208,7 @@ export function FinanceLedger({ kind }: { kind: FinanceKind }) {
           </CardContent>
         </Card>
         <ChargeDialog open={chargeOpen} onOpenChange={setChargeOpen} partyId={party.id} onSaved={reload} />
+        <FinanceDocumentDialog open={documentOpen} onOpenChange={setDocumentOpen} party={party} entries={own} role={role} initialBillId={documentBillId} />
         <PaymentDialog open={payOpen} onOpenChange={setPayOpen} partyId={party.id}
           charges={charges.map((c) => ({ c, due: openBalance(c, own) })).filter((x) => x.due > 0)}
           onSaved={reload} title={isAR ? "Receive payment" : "Make payment"} />
