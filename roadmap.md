@@ -1,7 +1,7 @@
 # Roadmap
 
-- [ ] Add AR/AP invoice and statement PDFs with shop selection, previous balance, itemized bills and print preview
-- [ ] Verify invoice downloads with a signed-in external account
+- [x] Add AR/AP invoice and statement PDFs with shop selection, previous balance, itemized bills and print preview (16 finance tests pass; both shop sample PDFs visually checked; build OK)
+- [ ] Verify invoice downloads with a signed-in external account — blocked: both account pages reach sign-in; no authenticated external-backend session available
 
 - [x] Add admin-controlled AR/AP recipient visibility controls and no staff bottom balance totals (11 finance tests pass; build OK)
 - [ ] Enable recipient privacy on the external database — blocked: the migration tool targets Lovable Cloud, not the app's external database; run supabase-sql/04_finance_privacy.sql there
