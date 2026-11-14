@@ -25,7 +25,7 @@ import { matchesSearchText } from "@/lib/product-search";
 import {
   openBalance, partyBalance, settledBy, billTotal, itemTotal, validBillItems,
   encodeBillItems, decodeBillItems, billProductLabel,
-  encodeReturnItems, isReturnEntry, returnLabel, returnedQuantities,
+  encodeReturnItems, isReturnEntry, isAdvanceEntry, returnLabel, returnedQuantities,
   financePartyPrivacy, encodeFinancePartyPrivacy, canViewFinanceParty, canViewFinanceTotals,
   type FinanceEntry, type FinanceKind, type FinanceParty,
 } from "@/lib/finance";
@@ -197,7 +197,7 @@ export function FinanceLedger({ kind }: { kind: FinanceKind }) {
                 {payments.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell>{formatDate(p.date)}</TableCell>
-                    <TableCell>{poOf(p.parent_id)}</TableCell>
+                    <TableCell>{isAdvanceEntry(p) ? <Badge variant="outline">{p.po_number === "OPENING" ? "Opening advance" : "Advance"}</Badge> : poOf(p.parent_id)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(p.amount)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(p.discount)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(p.tax)}</TableCell>
@@ -271,16 +271,28 @@ function PartyDialog({ open, onOpenChange, kind, onSaved, privacyReady }: DlgPro
   const [name, setName] = React.useState("");
   const [phone, setPhone] = React.useState("");
   const [hidden, setHidden] = React.useState(false);
+  const [opening, setOpening] = React.useState("");
+  const [openingType, setOpeningType] = React.useState<"due" | "advance">("due");
+  const [openingDate, setOpeningDate] = React.useState(today());
   const [busy, setBusy] = React.useState(false);
+  const openingAmount = opening.trim() ? num(opening) : 0;
+  const openingInvalid = Number.isNaN(openingAmount) || openingAmount < 0 || (openingAmount > 0 && !openingDate);
+  const isAR = kind === "receivable";
   const save = async () => {
-    if (!name.trim() || busy) return;
+    if (!name.trim() || busy || openingInvalid) return;
     setBusy(true);
     if (hidden && role === "admin" && !privacyReady) { setBusy(false); return; }
-    const { error } = await db.from("finance_parties").insert({ kind, name: name.trim(), phone: phone.trim() || null,
-      notes: role === "admin" && hidden ? encodeFinancePartyPrivacy(null, true) : null });
+    const { data: created, error } = await db.from("finance_parties").insert({ kind, name: name.trim(), phone: phone.trim() || null,
+      notes: role === "admin" && hidden ? encodeFinancePartyPrivacy(null, true) : null }).select("id").single();
+    if (error || !created) { setBusy(false); return toast.error(error?.message ?? "Could not save."); }
+    if (openingAmount > 0) {
+      const { error: openErr } = await db.from("finance_entries").insert(openingType === "due"
+        ? { party_id: created.id, entry_type: "invoice", po_number: "OPENING", date: openingDate, product_name: "Opening balance", amount: openingAmount, note: "Opening balance" }
+        : { party_id: created.id, entry_type: "payment", parent_id: null, po_number: "OPENING", date: openingDate, amount: openingAmount, discount: 0, tax: 0, note: "Opening advance balance" });
+      if (openErr) toast.error(`Saved, but opening balance failed: ${openErr.message}`);
+    }
     setBusy(false);
-    if (error) return toast.error(error.message);
-    setName(""); setPhone(""); setHidden(false); onOpenChange(false); await onSaved();
+    setName(""); setPhone(""); setHidden(false); setOpening(""); setOpeningType("due"); setOpeningDate(today()); onOpenChange(false); await onSaved();
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -289,9 +301,23 @@ function PartyDialog({ open, onOpenChange, kind, onSaved, privacyReady }: DlgPro
         <div className="space-y-3">
           <div><Label>Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
           <div><Label>Phone (optional)</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div><Label>Opening balance (optional)</Label><Input inputMode="decimal" placeholder="0" value={opening} onChange={(e) => setOpening(e.target.value)} /></div>
+            <div><Label>As of date</Label><Input type="date" value={openingDate} onChange={(e) => setOpeningDate(e.target.value)} /></div>
+            <div className="sm:col-span-2"><Label>Balance type</Label>
+              <Select value={openingType} onValueChange={(v) => setOpeningType(v as "due" | "advance")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="due">{isAR ? "Customer owes us (due)" : "We owe supplier (due)"}</SelectItem>
+                  <SelectItem value="advance">{isAR ? "Customer paid in advance (credit)" : "We paid supplier in advance (credit)"}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {openingInvalid && <p className="text-sm text-destructive sm:col-span-2">Enter a valid opening amount.</p>}
+          </div>
           {role === "admin" && <div className="flex items-center gap-2"><Checkbox id="hide-recipient" checked={hidden} disabled={!privacyReady || busy} onCheckedChange={(value) => setHidden(value === true)} /><Label htmlFor="hide-recipient">Hide from staff account</Label></div>}
         </div>
-        <DialogFooter><Button onClick={save} disabled={busy || !name.trim()}>{busy ? "Saving…" : "Save"}</Button></DialogFooter>
+        <DialogFooter><Button onClick={save} disabled={busy || !name.trim() || openingInvalid}>{busy ? "Saving…" : "Save"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -375,14 +401,15 @@ function PaymentDialog({ open, onOpenChange, partyId, charges, onSaved, title }:
   const [tax, setTax] = React.useState("");
   const [note, setNote] = React.useState("");
   const [busy, setBusy] = React.useState(false);
+  const advance = chargeId === "__advance";
   const due = charges.find((x) => x.c.id === chargeId)?.due ?? 0;
   const cleared = num(amount) + num(discount) + num(tax);
-  const invalid = !chargeId || cleared <= 0 || cleared > due + 0.001 || [amount, discount, tax].some((v) => num(v) < 0 || Number.isNaN(num(v)));
+  const invalid = !chargeId || cleared <= 0 || (!advance && cleared > due + 0.001) || [amount, discount, tax].some((v) => num(v) < 0 || Number.isNaN(num(v)));
   const save = async () => {
     if (invalid || busy) return;
     setBusy(true);
     const { error } = await db.from("finance_entries").insert({
-      party_id: partyId, entry_type: "payment", parent_id: chargeId, date,
+      party_id: partyId, entry_type: "payment", parent_id: advance ? null : chargeId, date,
       amount: num(amount), discount: num(discount), tax: num(tax), note: note.trim() || null,
     });
     setBusy(false);
@@ -396,8 +423,9 @@ function PaymentDialog({ open, onOpenChange, partyId, charges, onSaved, title }:
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2"><Label>Against PO / loan</Label>
             <Select value={chargeId} onValueChange={setChargeId}>
-              <SelectTrigger><SelectValue placeholder={charges.length ? "Select" : "Nothing due"} /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
               <SelectContent>
+                <SelectItem value="__advance">Advance payment / on account (no bill)</SelectItem>
                 {charges.map(({ c, due }) => (
                   <SelectItem key={c.id} value={c.id}>
                     {(c.po_number || (c.entry_type === "loan" ? "Loan" : "Bill"))} · {formatDate(c.date)}{c.product_name ? ` · ${billProductLabel(c.product_name)}` : ""} — due {formatCurrency(due)}
@@ -412,8 +440,8 @@ function PaymentDialog({ open, onOpenChange, partyId, charges, onSaved, title }:
           <div><Label>VAT / Tax deducted</Label><Input inputMode="decimal" value={tax} onChange={(e) => setTax(e.target.value)} /></div>
           <div className="sm:col-span-2"><Label>Note</Label><Input value={note} onChange={(e) => setNote(e.target.value)} /></div>
           <p className="text-sm text-muted-foreground sm:col-span-2">
-            Clears {formatCurrency(cleared)} of {formatCurrency(due)} due · remaining {formatCurrency(Math.max(0, due - cleared))}
-            {cleared > due + 0.001 && <span className="text-destructive"> — more than what is due</span>}
+            {advance ? <>Records an advance of {formatCurrency(cleared)} — reduces the overall balance</> : <>Clears {formatCurrency(cleared)} of {formatCurrency(due)} due · remaining {formatCurrency(Math.max(0, due - cleared))}
+            {cleared > due + 0.001 && <span className="text-destructive"> — more than what is due</span>}</>}
           </p>
         </div>
         <DialogFooter><Button onClick={save} disabled={busy || invalid}>{busy ? "Saving…" : "Save payment"}</Button></DialogFooter>

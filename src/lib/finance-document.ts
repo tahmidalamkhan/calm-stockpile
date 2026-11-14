@@ -1,4 +1,4 @@
-import { billProductLabel, decodeBillItems, itemTotal, settledBy, canViewFinanceParty, isReturnEntry, returnLabel, type FinanceEntry, type FinanceParty } from "./finance";
+import { billProductLabel, decodeBillItems, itemTotal, settledBy, canViewFinanceParty, isReturnEntry, isAdvanceEntry, returnLabel, type FinanceEntry, type FinanceParty } from "./finance";
 
 export const invoiceShops = [
   { id: "scale-house", name: "SCALE HOUSE", address: "261 BANGSHAL ROAD DHAKA", phone: "+880 1764-523321" },
@@ -46,7 +46,7 @@ export function buildFinanceStatement(party: FinanceParty, entries: FinanceEntry
     const isPay = entry.entry_type === "payment" && !isReturn;
     const details = decodeBillItems(entry.product_name)?.map((item) => `${item.name} — ${item.quantity} × ${item.unitPrice.toFixed(2)} = ${itemTotal(item).toFixed(2)}`).join("\n") ?? billProductLabel(entry.product_name);
     return { entry, reference: entry.po_number || parent?.po_number || "—",
-      description: isReturn ? `Goods return\n${returnLabel(entry.product_name)}` : isPay ? "Payment" : entry.entry_type === "loan" ? "Loan" : details || "Bill",
+      description: isAdvanceEntry(entry) ? (entry.po_number === "OPENING" ? "Opening advance balance" : "Advance payment") : isReturn ? `Goods return\n${returnLabel(entry.product_name)}` : isPay ? "Payment" : entry.entry_type === "loan" ? "Loan" : details || "Bill",
       charge: entry.entry_type === "payment" ? 0 : Number(entry.amount),
       paid: isPay ? Number(entry.amount) : 0,
       returned: isReturn ? settledBy(entry) : 0,

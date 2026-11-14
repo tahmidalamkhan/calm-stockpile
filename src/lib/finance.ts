@@ -103,10 +103,12 @@ export function openBalance(charge: FinanceEntry, entries: FinanceEntry[]): numb
 
 export function partyBalance(partyId: string, entries: FinanceEntry[]): number {
   const own = entries.filter((e) => e.party_id === partyId);
-  return own
-    .filter((e) => e.entry_type !== "payment")
-    .reduce((s, c) => s + openBalance(c, own), 0);
+  const open = own.filter((e) => e.entry_type !== "payment").reduce((s, c) => s + openBalance(c, own), 0);
+  // Advance / on-account payments have no linked bill and reduce the overall balance (can go into credit).
+  const advances = own.filter(isAdvanceEntry).reduce((s, e) => s + settledBy(e), 0);
+  return Math.round((open - advances) * 100) / 100;
 }
+export const isAdvanceEntry = (e: FinanceEntry) => e.entry_type === "payment" && !e.parent_id;
 
 export function kindTotal(kind: FinanceKind, parties: FinanceParty[], entries: FinanceEntry[]) {
   return parties
