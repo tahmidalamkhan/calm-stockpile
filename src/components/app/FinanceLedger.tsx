@@ -489,14 +489,6 @@ function ReturnDialog({ open, onOpenChange, partyId, charges, onSaved }: DlgProp
     setBusy(true);
     try {
       const payload = encodeReturnItems(lines.filter((l) => l.q > 0).map((l) => ({ name: l.name, quantity: l.q, unitPrice: l.unitPrice, lineIndex: l.lineIndex })));
-      if (existing) {
-        const prior = decodeBillItems(existing.product_name) ?? [{ name: existing.product_name || existing.po_number || "Item", quantity: 1, unitPrice: Number(existing.amount) }];
-        const merged = [...prior, ...items];
-        const { error } = await db.from("finance_entries").update({ product_name: encodeBillItems(merged), amount: billTotal(merged) }).eq("id", existing.id);
-        if (error) throw error;
-        setTarget("__new"); setLines([newLine()]); onOpenChange(false); await onSaved();
-        return;
-      }
       const { error } = await db.from("finance_entries").insert({
         party_id: partyId, entry_type: "payment", parent_id: chargeId, date, product_name: payload,
         amount: total, discount: 0, tax: 0, note: note.trim() || null,
