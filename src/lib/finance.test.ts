@@ -78,3 +78,16 @@ test("settlements reduce the complete multi-product PO without affecting another
   assert.equal(openBalance(bill, [bill, other, payment]), 100);
   assert.equal(openBalance(other, [bill, other, payment]), 100);
 });
+
+test("opening due of 10000 gives balance 10000", () => {
+  assert.equal(partyBalance("p", [e({ id: "o", party_id: "p", entry_type: "invoice", po_number: "OPENING", amount: 10000 })]), 10000);
+});
+test("opening advance of 5000 gives credit -5000", () => {
+  assert.equal(partyBalance("p", [e({ id: "a", party_id: "p", entry_type: "payment", parent_id: null, amount: 5000 })]), -5000);
+});
+test("advance 3000 then bill 8000 leaves 5000 due", () => {
+  assert.equal(partyBalance("p", [
+    e({ id: "a", party_id: "p", entry_type: "payment", parent_id: null, amount: 3000 }),
+    e({ id: "b", party_id: "p", entry_type: "invoice", amount: 8000 }),
+  ]), 5000);
+});
