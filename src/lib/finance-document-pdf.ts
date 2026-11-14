@@ -24,8 +24,8 @@ export async function createFinanceDocumentPdf(party: FinanceParty, entries: Fin
   startY += 18;
   const styles = { fontSize: 9, cellPadding: 6, overflow: "linebreak" as const };
   if (invoice) {
-    const body = invoice.items?.map((item) => [item.name, String(item.quantity), formatCurrency(item.unitPrice), formatCurrency(itemTotal(item))]) ?? [[invoice.bill.entry_type === "loan" ? "Loan" : billProductLabel(invoice.bill.product_name) || "Bill", "—", "—", formatCurrency(invoice.subtotal)]];
-    autoTable(doc, { head: [["Product / Description", "Qty", "Unit price", "Total"]], body, startY, margin: 40, styles, theme: "grid", columnStyles: { 0: { cellWidth: 270 }, 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } } });
+    const body = invoice.items?.map((item, i) => [String(i + 1), item.name, String(item.quantity), formatCurrency(item.unitPrice), formatCurrency(itemTotal(item))]) ?? [["1", invoice.bill.entry_type === "loan" ? "Loan" : billProductLabel(invoice.bill.product_name) || "Bill", "—", "—", formatCurrency(invoice.subtotal)]];
+    autoTable(doc, { head: [["#", "Product name", "Qty", "Item price", "Total"]], body, startY, margin: 40, styles, theme: "grid", columnStyles: { 0: { cellWidth: 28 }, 1: { cellWidth: 250 }, 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" } } });
     const lastY = (doc as typeof doc & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? startY;
     autoTable(doc, { startY: lastY + 16, margin: { left: 220, right: 40 }, theme: "plain", styles,
       body: [["Current bill subtotal", formatCurrency(invoice.subtotal)], ["Previous balance at issue", formatCurrency(invoice.previousBalance)], ["Total due at issue", formatCurrency(invoice.totalDue)], ["Paid against this bill", formatCurrency(invoice.paid)], ["Discount against this bill", formatCurrency(invoice.discount)], ["VAT / Tax against this bill", formatCurrency(invoice.tax)], ["Goods returned against this bill", formatCurrency(invoice.returned)], ["Outstanding incl. previous balance", formatCurrency(invoice.outstanding)]], columnStyles: { 1: { halign: "right" } } });

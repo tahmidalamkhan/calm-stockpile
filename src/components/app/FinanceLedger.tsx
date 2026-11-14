@@ -210,7 +210,7 @@ export function FinanceLedger({ kind }: { kind: FinanceKind }) {
             </Table>
           </CardContent>
         </Card>
-        <ChargeDialog open={chargeOpen} onOpenChange={setChargeOpen} partyId={party.id} onSaved={reload} />
+        <ChargeDialog open={chargeOpen} onOpenChange={setChargeOpen} partyId={party.id} bills={charges.filter((c) => c.entry_type === "invoice")} onSaved={reload} />
         <FinanceDocumentDialog open={documentOpen} onOpenChange={setDocumentOpen} party={party} entries={own} role={role} initialBillId={documentBillId} />
         <ReturnDialog open={returnOpen} onOpenChange={setReturnOpen} partyId={party.id}
           charges={charges.filter((c) => decodeBillItems(c.product_name)).map((c) => ({ c, due: openBalance(c, own), returned: returnedQuantities(c.id, own) }))}
@@ -323,7 +323,9 @@ function PartyDialog({ open, onOpenChange, kind, onSaved, privacyReady }: DlgPro
   );
 }
 
-function ChargeDialog({ open, onOpenChange, partyId, onSaved }: DlgProps & { partyId: string }) {
+function ChargeDialog({ open, onOpenChange, partyId, bills, onSaved }: DlgProps & { partyId: string; bills: FinanceEntry[] }) {
+  const [target, setTarget] = React.useState("__new");
+  const existing = bills.find((b) => b.id === target);
   const [type, setType] = React.useState<"invoice" | "loan">("invoice");
   const [po, setPo] = React.useState("");
   const [date, setDate] = React.useState(today());
@@ -343,6 +345,14 @@ function ChargeDialog({ open, onOpenChange, partyId, onSaved }: DlgProps & { par
     saving.current = true;
     setBusy(true);
     try {
+      if (existing) {
+        const prior = decodeBillItems(existing.product_name) ?? [{ name: existing.product_name || existing.po_number || "Item", quantity: 1, unitPrice: Number(existing.amount) }];
+        const merged = [...prior, ...items];
+        const { error } = await db.from("finance_entries").update({ product_name: encodeBillItems(merged), amount: billTotal(merged) }).eq("id", existing.id);
+        if (error) throw error;
+        setTarget("__new"); setLines([newLine()]); onOpenChange(false); await onSaved();
+        return;
+      }
       const { error } = await db.from("finance_entries").insert({
         party_id: partyId, entry_type: type, po_number: po.trim() || null, date,
         product_name: type === "invoice" ? encodeBillItems(items) : null,
@@ -359,14 +369,23 @@ function ChargeDialog({ open, onOpenChange, partyId, onSaved }: DlgProps & { par
       <DialogContent className="max-h-[90dvh] w-[calc(100%-2rem)] overflow-y-auto sm:max-w-3xl">
         <DialogHeader><DialogTitle>Add amount</DialogTitle></DialogHeader>
         <div className="grid gap-3 sm:grid-cols-2">
-          <div><Label>Type</Label>
+          <div className="sm:col-span-2"><Label>Add to</Label>
+            <Select value={target} onValueChange={(v) => { setTarget(v); if (v !== "__new") setType("invoice"); }}>
+              <SelectTrigger aria-label="Add to PO"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__new">New bill / PO / loan</SelectItem>
+                {bills.map((b) => <SelectItem key={b.id} value={b.id}>Existing PO: {b.po_number || "Bill"} · {formatDate(b.date)} · {formatCurrency(b.amount)}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          {!existing && <><div><Label>Type</Label>
             <Select value={type} onValueChange={(v) => setType(v as "invoice" | "loan")}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent><SelectItem value="invoice">Bill / PO</SelectItem><SelectItem value="loan">Loan</SelectItem></SelectContent>
             </Select>
           </div>
           <div><Label>Date</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
-          <div><Label>PO number</Label><Input value={po} onChange={(e) => setPo(e.target.value)} /></div>
+          <div><Label>PO number</Label><Input value={po} onChange={(e) => setPo(e.target.value)} /></div></>}
           {type === "loan" && <div><Label>Amount</Label><Input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>}
           {type === "invoice" && <div className="sm:col-span-2 space-y-3">
             <div className="flex items-center justify-between"><Label>Products</Label>
@@ -381,9 +400,10 @@ function ChargeDialog({ open, onOpenChange, partyId, onSaved }: DlgProps & { par
                 <Button type="button" size="icon" variant="ghost" className="justify-self-end" aria-label={`Remove product ${index + 1}`} title="Remove product" disabled={busy || lines.length === 1} onClick={() => setLines((previous) => previous.filter((item) => item.id !== line.id))}><Trash2 className="h-4 w-4" /></Button>
               </div>
             ))}
-            <div className="flex justify-between gap-4 font-semibold"><span>Bill total</span><span>{Number.isFinite(total) ? formatCurrency(total) : "—"}</span></div>
+            <div className="flex justify-between gap-4 font-semibold"><span>{existing ? "Adding to bill" : "Bill total"}</span><span>{Number.isFinite(total) ? formatCurrency(total) : "—"}</span></div>
+            {existing && <div className="flex justify-between gap-4 text-sm text-muted-foreground"><span>New PO total</span><span>{formatCurrency(Number(existing.amount) + (Number.isFinite(total) ? total : 0))}</span></div>}
           </div>}
-          <div className="sm:col-span-2"><Label>Note</Label><Input value={note} onChange={(e) => setNote(e.target.value)} /></div>
+          {!existing && <div className="sm:col-span-2"><Label>Note</Label><Input value={note} onChange={(e) => setNote(e.target.value)} /></div>}
         </div>
         <DialogFooter><Button onClick={save} disabled={busy || invalid}>{busy ? "Saving…" : "Save"}</Button></DialogFooter>
       </DialogContent>
@@ -469,6 +489,14 @@ function ReturnDialog({ open, onOpenChange, partyId, charges, onSaved }: DlgProp
     setBusy(true);
     try {
       const payload = encodeReturnItems(lines.filter((l) => l.q > 0).map((l) => ({ name: l.name, quantity: l.q, unitPrice: l.unitPrice, lineIndex: l.lineIndex })));
+      if (existing) {
+        const prior = decodeBillItems(existing.product_name) ?? [{ name: existing.product_name || existing.po_number || "Item", quantity: 1, unitPrice: Number(existing.amount) }];
+        const merged = [...prior, ...items];
+        const { error } = await db.from("finance_entries").update({ product_name: encodeBillItems(merged), amount: billTotal(merged) }).eq("id", existing.id);
+        if (error) throw error;
+        setTarget("__new"); setLines([newLine()]); onOpenChange(false); await onSaved();
+        return;
+      }
       const { error } = await db.from("finance_entries").insert({
         party_id: partyId, entry_type: "payment", parent_id: chargeId, date, product_name: payload,
         amount: total, discount: 0, tax: 0, note: note.trim() || null,
