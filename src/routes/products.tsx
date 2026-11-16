@@ -61,7 +61,7 @@ function ProductsPage() {
     }
   };
   const { role } = useAuth();
-  const isStaff = role === "staff";
+  const isStaff = role !== "admin";
   const [query, setQuery] = React.useState("");
   const [editing, setEditing] = React.useState<Product | null>(null);
   const [editMode, setEditMode] = React.useState(false);

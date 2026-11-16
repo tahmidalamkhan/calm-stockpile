@@ -41,7 +41,7 @@ export const Route = createFileRoute("/stock")({
 function StockPage() {
   const { activeCompanyId, products, warehouses, stockMovements } = useCompany();
   const { role } = useAuth();
-  const isStaff = role === "staff";
+  const isStaff = role !== "admin";
   const ws = warehouses.filter((w) => w.companyId === activeCompanyId);
   const ps = products.filter((p) => p.companyId === activeCompanyId);
   const ms = stockMovements.filter((m) => m.companyId === activeCompanyId);

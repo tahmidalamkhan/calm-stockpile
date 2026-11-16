@@ -18,7 +18,7 @@ type StockRow = { warehouseId: string; quantity: number };
 export function NewProductDialog() {
   const { activeCompanyId, addProduct, warehouses } = useCompany();
   const { role } = useAuth();
-  const isStaff = role === "staff";
+  const isStaff = role !== "admin";
   const companyWarehouses = warehouses.filter((w) => w.companyId === activeCompanyId);
   const defaultWh =
     companyWarehouses.find((w) => w.isDefault)?.id ?? companyWarehouses[0]?.id ?? "";
