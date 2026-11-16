@@ -15,7 +15,7 @@ export function encodeFinancePartyPrivacy(notes: string | null | undefined, hidd
   return privacyPrefix + JSON.stringify({ hiddenFromStaff, notes: financePartyPrivacy(notes).notes });
 }
 export const canViewFinanceParty = (party: FinanceParty, role: string | null) =>
-  role === "admin" || (role === "staff" && !financePartyPrivacy(party.notes).hiddenFromStaff);
+  role === "admin" || ((role === "staff" || role === "manager") && !financePartyPrivacy(party.notes).hiddenFromStaff);
 export const canViewFinanceTotals = (role: string | null) => role === "admin";
 export type FinanceItem = { name: string; quantity: number; unitPrice: number };
 

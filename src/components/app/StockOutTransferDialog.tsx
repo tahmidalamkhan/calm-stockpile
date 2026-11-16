@@ -26,7 +26,7 @@ const num = (v: string) => Math.max(0, Number(v) || 0);
 export function StockOutTransferDialog() {
   const { activeCompanyId, warehouses, products, stockMovements, addStockMovements } = useCompany();
   const { role } = useAuth();
-  const isStaff = role === "staff";
+  const isStaff = role !== "admin";
 
   const [open, setOpen] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
