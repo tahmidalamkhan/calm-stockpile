@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-type Role = "admin" | "staff";
+type Role = "admin" | "manager" | "staff";
 
 const tokenSchema = z.object({ token: z.string().min(10) });
 
@@ -35,7 +35,7 @@ export const listUsers = createServerFn({ method: "POST" })
     const roleMap = new Map<string, Role>();
     (roles ?? []).forEach((r: { user_id: string; role: string }) => {
       const cur = roleMap.get(r.user_id);
-      if (r.role === "admin" || !cur) roleMap.set(r.user_id, r.role as Role);
+      if (r.role === "admin" || !cur || (r.role === "manager" && cur === "staff")) roleMap.set(r.user_id, r.role as Role);
     });
 
     return all.map((u) => ({ ...u, role: roleMap.get(u.id) ?? ("staff" as Role) }));
@@ -47,7 +47,7 @@ export const createUser = createServerFn({ method: "POST" })
       .extend({
         email: z.string().email(),
         password: z.string().min(8).max(72),
-        role: z.enum(["admin", "staff"]),
+        role: z.enum(["admin", "manager", "staff"]),
       })
       .parse(input),
   )
@@ -76,7 +76,7 @@ export const createUser = createServerFn({ method: "POST" })
 export const updateUserRole = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     tokenSchema
-      .extend({ userId: z.string().uuid(), role: z.enum(["admin", "staff"]) })
+      .extend({ userId: z.string().uuid(), role: z.enum(["admin", "manager", "staff"]) })
       .parse(input),
   )
   .handler(async ({ data }) => {

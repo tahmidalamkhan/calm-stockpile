@@ -6,7 +6,7 @@
 
 -- ---------- Enums ----------
 DO $$ BEGIN
-  CREATE TYPE app_role AS ENUM ('admin', 'staff');
+  CREATE TYPE app_role AS ENUM ('admin', 'manager', 'staff');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN

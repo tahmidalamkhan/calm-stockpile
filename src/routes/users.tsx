@@ -75,7 +75,7 @@ function UsersPage() {
   const [open, setOpen] = React.useState(false);
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const [newRole, setNewRole] = React.useState<"admin" | "staff">("staff");
+  const [newRole, setNewRole] = React.useState<"admin" | "manager" | "staff">("staff");
 
   const createMut = useMutation({
     mutationFn: () =>
@@ -92,7 +92,7 @@ function UsersPage() {
   });
 
   const updateMut = useMutation({
-    mutationFn: (v: { userId: string; role: "admin" | "staff" }) =>
+    mutationFn: (v: { userId: string; role: "admin" | "manager" | "staff" }) =>
       doUpdate({ data: { token: session?.access_token ?? "", ...v } }),
     onSuccess: () => {
       toast.success("Role updated");
@@ -153,13 +153,14 @@ function UsersPage() {
                   <Label>Role</Label>
                   <Select
                     value={newRole}
-                    onValueChange={(v) => setNewRole(v as "admin" | "staff")}
+                    onValueChange={(v) => setNewRole(v as "admin" | "manager" | "staff")}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="admin">Admin — full access</SelectItem>
+                      <SelectItem value="manager">Manager — staff access + accounts</SelectItem>
                       <SelectItem value="staff">Staff — no dashboard</SelectItem>
                     </SelectContent>
                   </Select>
@@ -215,7 +216,7 @@ function UsersPage() {
                         onValueChange={(v) =>
                           updateMut.mutate({
                             userId: u.id,
-                            role: v as "admin" | "staff",
+                            role: v as "admin" | "manager" | "staff",
                           })
                         }
                         disabled={u.id === user?.id}
@@ -225,6 +226,7 @@ function UsersPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="manager">Manager</SelectItem>
                           <SelectItem value="staff">Staff</SelectItem>
                         </SelectContent>
                       </Select>

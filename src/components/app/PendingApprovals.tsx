@@ -29,7 +29,7 @@ import { formatDate } from "@/lib/format";
 
 export function PendingApprovals() {
   const qc = useQueryClient();
-  const [roles, setRoles] = React.useState<Record<string, "admin" | "staff">>({});
+  const [roles, setRoles] = React.useState<Record<string, "admin" | "manager" | "staff">>({});
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["access-requests"],
@@ -37,7 +37,7 @@ export function PendingApprovals() {
   });
 
   const approve = useMutation({
-    mutationFn: (v: { id: string; role: "admin" | "staff" }) =>
+    mutationFn: (v: { id: string; role: "admin" | "manager" | "staff" }) =>
       approveAccessRequest(v.id, v.role),
     onSuccess: () => {
       toast.success("Access granted");
@@ -106,7 +106,7 @@ export function PendingApprovals() {
                     <Select
                       value={roles[r.id] ?? "staff"}
                       onValueChange={(v) =>
-                        setRoles((s) => ({ ...s, [r.id]: v as "admin" | "staff" }))
+                        setRoles((s) => ({ ...s, [r.id]: v as "admin" | "manager" | "staff" }))
                       }
                     >
                       <SelectTrigger className="w-[140px]">
@@ -114,6 +114,7 @@ export function PendingApprovals() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="manager">Manager</SelectItem>
                         <SelectItem value="staff">Staff</SelectItem>
                       </SelectContent>
                     </Select>

@@ -6,7 +6,7 @@ export function buildProductReport(
   products: Product[],
   movements: StockMovement[],
   warehouses: Warehouse[],
-  role: "admin" | "staff" | null,
+  role: "admin" | "manager" | "staff" | null,
 ) {
   const includePrices = role === "admin";
   const columns = ["SKU", "Product Name", "Category", "Unit", "Warehouses"];
