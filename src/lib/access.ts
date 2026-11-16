@@ -15,7 +15,7 @@ export type AccountRequest = {
   id: string;
   email: string;
   status: AccessStatus;
-  requestedRole: "admin" | "staff";
+  requestedRole: "admin" | "manager" | "staff";
   createdAt: string;
 };
 
@@ -24,7 +24,7 @@ function map(r: Record<string, unknown>): AccountRequest {
     id: r.id as string,
     email: (r.email as string) ?? "",
     status: (r.status as AccessStatus) ?? "pending",
-    requestedRole: ((r.requested_role as string) ?? "staff") as "admin" | "staff",
+    requestedRole: ((r.requested_role as string) ?? "staff") as "admin" | "manager" | "staff",
     createdAt: (r.created_at as string) ?? new Date().toISOString(),
   };
 }
@@ -58,7 +58,7 @@ export async function listAccessRequests(): Promise<AccountRequest[]> {
 }
 
 /** Admin: approve a request and grant the chosen role. */
-export async function approveAccessRequest(userId: string, role: "admin" | "staff") {
+export async function approveAccessRequest(userId: string, role: "admin" | "manager" | "staff") {
   const { error: rErr } = await (supabase as any)
     .from("user_roles")
     .upsert({ user_id: userId, role }, { onConflict: "user_id,role" });

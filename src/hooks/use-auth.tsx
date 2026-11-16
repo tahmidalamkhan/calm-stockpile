@@ -3,7 +3,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/custom-client";
 import { getMyAccessStatus, type AccessStatus } from "@/lib/access";
 
-export type Role = "admin" | "staff";
+export type Role = "admin" | "manager" | "staff";
 
 type AuthValue = {
   loading: boolean;
@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = React.useState<Role | null>(() => {
     if (typeof window === "undefined") return null;
     const cached = window.localStorage.getItem(ROLE_KEY);
-    return cached === "admin" || cached === "staff" ? cached : null;
+    return cached === "admin" || cached === "manager" || cached === "staff" ? cached : null;
   });
   const [access, setAccess] = React.useState<AccessStatus | null>(() => {
     if (typeof window === "undefined") return null;
@@ -68,7 +68,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const resolved: Role = roles.includes("admin") ? "admin" : "staff";
+      const resolved: Role = roles.includes("admin")
+        ? "admin"
+        : roles.includes("manager")
+          ? "manager"
+          : "staff";
       setRole(resolved);
       setAccess("approved");
       if (typeof window !== "undefined") {

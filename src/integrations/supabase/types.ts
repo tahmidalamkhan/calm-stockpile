@@ -317,7 +317,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "staff"
+      app_role: "admin" | "manager" | "staff"
       stock_movement_type: "purchase" | "sale" | "adjustment" | "transfer"
     }
     CompositeTypes: {

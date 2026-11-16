@@ -27,3 +27,4 @@
 - [x] Combined Stock Out & Transfer window on Stock Control
 - [x] Accounts Receivable/Payable with PO-wise payments, discount, VAT/tax, loans; admin dashboard totals
 - [x] Accounts tables confirmed present in the external database
+- [ ] Bank & cash accounts (admin + manager only, not staff) — waiting on user
