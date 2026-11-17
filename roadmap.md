@@ -31,3 +31,4 @@
 - [x] Accounts Receivable/Payable with PO-wise payments, discount, VAT/tax, loans; admin dashboard totals
 - [x] Accounts tables confirmed present in the external database
 - [ ] Bank & cash accounts (admin + manager only, not staff) — waiting on user
+- [ ] Accounts section (bank/cash): admin+manager only, hide accounts from manager
