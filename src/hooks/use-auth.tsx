@@ -2,6 +2,8 @@ import * as React from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/custom-client";
 import { getMyAccessStatus, type AccessStatus } from "@/lib/access";
+import { SessionInactivityWarning } from "@/components/app/SessionInactivityWarning";
+import { toast } from "sonner";
 
 export type Role = "admin" | "manager" | "staff";
 
@@ -119,6 +121,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [loadRole]);
 
 
+  const expireInactiveSession = React.useCallback(async () => {
+    // Lock the UI immediately, even if the network is unavailable during sign-out.
+    setSession(null);
+    setRole(null);
+    setAccess(null);
+    setRoleChecked(false);
+    try {
+      window.localStorage.removeItem(ROLE_KEY);
+      window.localStorage.removeItem(ACCESS_KEY);
+    } catch { /* The auth client still clears its session below. */ }
+    toast.info("You have been logged out due to 10 minutes of inactivity for security.");
+    await supabase.auth.signOut({ scope: "local" }).catch(() => {});
+  }, []);
+
   const value: AuthValue = {
     loading,
     session,
@@ -127,8 +143,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     access,
     roleChecked,
     signIn: async (email, password) => {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      if (data.user) {
+        try { window.localStorage.setItem(`stockhub.lastActivity.${data.user.id}`, String(Date.now())); }
+        catch { /* In-memory inactivity tracking remains available. */ }
+      }
     },
     signOut: async () => {
       await supabase.auth.signOut();
@@ -136,7 +156,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshRole: loadRole,
   };
 
-  return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
+  return (
+    <AuthCtx.Provider value={value}>
+      {children}
+      <SessionInactivityWarning userId={session?.user.id ?? null} role={role} onExpire={expireInactiveSession} />
+    </AuthCtx.Provider>
+  );
 }
 
 export function useAuth() {
