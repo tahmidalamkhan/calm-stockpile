@@ -10,6 +10,7 @@ import {
   LogOut,
   HandCoins,
   Wallet,
+  Landmark,
 } from "lucide-react";
 import {
   Sidebar,
@@ -65,6 +66,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       { title: "Receivables", to: "/receivables", icon: HandCoins },
       { title: "Payables", to: "/payables", icon: Wallet },
+      { title: "Accounts", to: "/accounts", icon: Landmark, roles: ["admin", "manager"] },
     ],
   },
   {
