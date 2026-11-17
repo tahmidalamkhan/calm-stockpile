@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Staff/manager inactivity logout with a one-minute warning; admin exempt (seven timing tests pass; warning and actions browser-checked on desktop/mobile)
+- [ ] Verify inactivity logout with a real signed-in staff/manager account — blocked: no authenticated session for the app's external backend
+
 - [x] Add AR/AP invoice and statement PDFs with shop selection, previous balance, itemized bills and print preview (16 finance tests pass; both shop sample PDFs visually checked; build OK)
 - [ ] Verify invoice downloads with a signed-in external account — blocked: both account pages reach sign-in; no authenticated external-backend session available
 
