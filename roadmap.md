@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Deployable to own hosting: Vercel and plain-Node build targets both produce a working server, every page serves 200, deploy guide written (42 tests pass)
+- [ ] Verify signed-in pages (dashboard sidebar, Users page) on a real deployment — blocked: no authenticated session for the app's external backend
+
 - [x] Staff/manager inactivity logout with a one-minute warning; admin exempt (seven timing tests pass; warning and actions browser-checked on desktop/mobile)
 - [ ] Verify inactivity logout with a real signed-in staff/manager account — blocked: no authenticated session for the app's external backend
 
