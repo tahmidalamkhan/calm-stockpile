@@ -8,6 +8,9 @@ export const canViewBankAccount = (a: BankAccount, role: string | null) =>
 export const signedAmount = (t: BankTransaction) => (t.direction === "in" ? 1 : -1) * Number(t.amount);
 export const accountBalance = (txs: BankTransaction[], accountId: string) =>
   Math.round(txs.filter((t) => t.account_id === accountId).reduce((s, t) => s + signedAmount(t), 0) * 100) / 100;
+/** Combined balance of the given accounts, rounded to two decimals. */
+export const totalBalance = (txs: BankTransaction[], accounts: BankAccount[]) =>
+  Math.round(accounts.reduce((s, a) => s + accountBalance(txs, a.id), 0) * 100) / 100;
 /** Chronological rows with running balance. */
 export function runningRows(txs: BankTransaction[], accountId: string) {
   let bal = 0;

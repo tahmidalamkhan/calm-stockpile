@@ -1,10 +1,13 @@
+import * as React from "react";
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
-import { Package, Boxes, Warehouse as WarehouseIcon, AlertTriangle, ArrowRight, HandCoins, Wallet } from "lucide-react";
+import { Package, Boxes, Warehouse as WarehouseIcon, AlertTriangle, ArrowRight, HandCoins, Wallet, Landmark } from "lucide-react";
 import { useFinance } from "@/components/app/FinanceLedger";
 import { kindTotal } from "@/lib/finance";
 import { PageHeader } from "@/components/app/PageHeader";
 import { StatCard } from "@/components/app/StatCard";
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/custom-client";
+import { totalBalance, type BankAccount, type BankTransaction } from "@/lib/bank-accounts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -37,7 +40,28 @@ function Dashboard() {
   const { role } = useAuth();
   const { activeCompanyId, activeCompany, products, warehouses, stockMovements } = useCompany();
   const fin = useFinance();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+  const [accounts, setAccounts] = React.useState<BankAccount[]>([]);
+  const [accountTxs, setAccountTxs] = React.useState<BankTransaction[]>([]);
+  React.useEffect(() => {
+    let alive = true;
+    void (async () => {
+      const [a, t] = await Promise.all([
+        db.from("bank_accounts").select("*").order("name"),
+        db.from("bank_transactions").select("*"),
+      ]);
+      if (!alive || a.error || t.error) return;
+      setAccounts(a.data ?? []);
+      setAccountTxs((t.data ?? []).map((x: BankTransaction) => ({ ...x, amount: Number(x.amount) })));
+    })();
+    return () => { alive = false; };
+  }, [db]);
+
   if (role && role !== "admin") return <Navigate to="/products" />;
+
+  const cashTotal = totalBalance(accountTxs, accounts);
 
   const ps = products.filter((p) => p.companyId === activeCompanyId);
   const ws = warehouses.filter((w) => w.companyId === activeCompanyId);
@@ -118,6 +142,9 @@ function Dashboard() {
         </Link>
         <Link to="/payables" className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg">
           <StatCard title="Total payable" value={formatCurrency(kindTotal("payable", fin.parties, fin.entries))} icon={Wallet} hint="You owe, incl. loans taken" />
+        </Link>
+        <Link to="/accounts" className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg">
+          <StatCard title="Accounts balance" value={formatCurrency(cashTotal)} icon={Landmark} hint={`Across ${accounts.length} bank & cash account${accounts.length === 1 ? "" : "s"}`} />
         </Link>
       </div>
 
