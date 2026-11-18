@@ -24,7 +24,7 @@ export async function listAppUsers(): Promise<AppUser[]> {
   if (qErr) throw new Error(qErr.message);
   const byUser = new Map<string, { roles: string[]; created: string }>();
   (roles ?? []).forEach((r: any) => {
-    const cur = byUser.get(r.user_id) ?? { roles: [], created: r.created_at };
+    const cur: { roles: string[]; created: string } = byUser.get(r.user_id) ?? { roles: [], created: r.created_at };
     cur.roles.push(r.role);
     byUser.set(r.user_id, cur);
   });
