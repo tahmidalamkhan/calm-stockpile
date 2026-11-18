@@ -66,10 +66,16 @@ function UsersPage() {
   const doUpdate = useServerFn(updateUserRole);
   const doDelete = useServerFn(deleteUser);
 
-  const { data: users, isLoading } = useQuery({
+  const {
+    data: users,
+    isLoading,
+    error: usersError,
+  } = useQuery({
     queryKey: ["users"],
     queryFn: () => fetchUsers({ data: { token: session?.access_token ?? "" } }),
     enabled: role === "admin" && !!session?.access_token,
+    // A missing server key will not fix itself on retry — surface it instead.
+    retry: false,
   });
 
   const [open, setOpen] = React.useState(false);
@@ -197,6 +203,15 @@ function UsersPage() {
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-muted-foreground">
                     Loading…
+                  </TableCell>
+                </TableRow>
+              ) : usersError ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={4}
+                    className="px-4 py-6 text-center text-sm text-destructive"
+                  >
+                    {(usersError as Error).message}
                   </TableCell>
                 </TableRow>
               ) : (

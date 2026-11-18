@@ -5,9 +5,15 @@ import { createClient } from "@supabase/supabase-js";
 
 const URL = "https://sbhgjftaypfsuhshoesq.supabase.co";
 
+/** Shown to the admin when the hosting environment has no server key set. */
+export const MISSING_SERVER_KEY_MESSAGE =
+  "Server key is not set on this host. Add EXTERNAL_SUPABASE_SERVICE_ROLE_KEY to your hosting " +
+  "environment's environment variables and redeploy. Only the Users page needs it — every other " +
+  "page works without it.";
+
 export function getExternalAdmin() {
   const key = process.env.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) throw new Error("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY is not configured");
+  if (!key) throw new Error(MISSING_SERVER_KEY_MESSAGE);
   return createClient(URL, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
