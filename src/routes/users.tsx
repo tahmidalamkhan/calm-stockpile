@@ -1,6 +1,5 @@
 import * as React from "react";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/app/PageHeader";
@@ -35,12 +34,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
-import {
-  listUsers,
-  createUser,
-  updateUserRole,
-  deleteUser,
-} from "@/lib/auth.functions";
+import { listAppUsers, createAppUser, setAppUserRole, removeAppUser } from "@/lib/users-client";
 import { formatDate } from "@/lib/format";
 import { PendingApprovals } from "@/components/app/PendingApprovals";
 
@@ -61,10 +55,6 @@ export const Route = createFileRoute("/users")({
 function UsersPage() {
   const { role, user, session } = useAuth();
   const qc = useQueryClient();
-  const fetchUsers = useServerFn(listUsers);
-  const doCreate = useServerFn(createUser);
-  const doUpdate = useServerFn(updateUserRole);
-  const doDelete = useServerFn(deleteUser);
 
   const {
     data: users,
@@ -72,7 +62,7 @@ function UsersPage() {
     error: usersError,
   } = useQuery({
     queryKey: ["users"],
-    queryFn: () => fetchUsers({ data: { token: session?.access_token ?? "" } }),
+    queryFn: listAppUsers,
     enabled: role === "admin" && !!session?.access_token,
     // A missing server key will not fix itself on retry — surface it instead.
     retry: false,
@@ -84,10 +74,9 @@ function UsersPage() {
   const [newRole, setNewRole] = React.useState<"admin" | "manager" | "staff">("staff");
 
   const createMut = useMutation({
-    mutationFn: () =>
-      doCreate({ data: { token: session?.access_token ?? "", email, password, role: newRole } }),
-    onSuccess: () => {
-      toast.success("User created");
+    mutationFn: () => createAppUser(email, password, newRole),
+    onSuccess: (r) => {
+      toast.success(r.needsConfirm ? "User created. They must confirm their email before signing in." : "User created");
       setOpen(false);
       setEmail("");
       setPassword("");
@@ -99,7 +88,7 @@ function UsersPage() {
 
   const updateMut = useMutation({
     mutationFn: (v: { userId: string; role: "admin" | "manager" | "staff" }) =>
-      doUpdate({ data: { token: session?.access_token ?? "", ...v } }),
+      setAppUserRole(v.userId, v.role),
     onSuccess: () => {
       toast.success("Role updated");
       qc.invalidateQueries({ queryKey: ["users"] });
@@ -108,9 +97,9 @@ function UsersPage() {
   });
 
   const deleteMut = useMutation({
-    mutationFn: (userId: string) => doDelete({ data: { token: session?.access_token ?? "", userId } }),
+    mutationFn: (userId: string) => removeAppUser(userId),
     onSuccess: () => {
-      toast.success("User deleted");
+      toast.success("Access removed");
       qc.invalidateQueries({ queryKey: ["users"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -255,7 +244,7 @@ function UsersPage() {
                         size="icon"
                         disabled={u.id === user?.id}
                         onClick={() => {
-                          if (confirm(`Delete ${u.email}?`)) deleteMut.mutate(u.id);
+                          if (confirm(`Remove access for ${u.email}?`)) deleteMut.mutate(u.id);
                         }}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />

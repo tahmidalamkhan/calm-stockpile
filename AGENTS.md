@@ -7,3 +7,4 @@
 - Keep inactivity timing in the browser-safe session-inactivity helper and mount its watcher in AuthProvider; user-scoped shared timestamps preserve deadlines across reloads and tabs without additional auth polling.
 - Build Products PDF rows through the browser-safe product-report helper and render them with the shared PDF exporter so account-based price visibility is testable without downloading a file.
 - Build AR/AP documents through browser-safe finance-document helpers using chronological saved ledger order; keep PDF generation client-triggered and authorize recipient visibility before rendering so balances and privacy remain testable without downloads.
+- Users page talks to the database directly from the browser so it works on static hosting (cPanel); static builds use vite.spa.config.ts.
